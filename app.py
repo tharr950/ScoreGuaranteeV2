@@ -40,30 +40,94 @@ st.set_page_config(page_title="Score Guarantee V2", layout="wide")
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
 html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
-[data-testid="stSidebar"] { background: #f8f9fb !important; border-right: 1px solid #e2e8f0; }
+
+.stApp {
+    background: linear-gradient(180deg, #f7f9fc 0%, #ffffff 300px);
+}
+
+[data-testid="stSidebar"] {
+    background: #ffffff !important;
+    border-right: 1px solid #e5e9f0;
+}
+
 h1, h2, h3 { font-family: 'Source Serif 4', serif !important; color: #1e293b !important; }
+
 [data-testid="metric-container"] {
-    background: #f8f9fb; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px;
+    background: #ffffff;
+    border: 1px solid #e5e9f0;
+    border-radius: 12px;
+    padding: 18px 22px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 [data-testid="metric-container"] label {
-    color: #64748b !important; font-size: 0.75rem !important;
+    color: #64748b !important; font-size: 0.72rem !important;
     letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600;
 }
 [data-testid="metric-container"] [data-testid="stMetricValue"] {
-    color: #1e293b !important; font-size: 1.9rem !important;
+    color: #0f172a !important; font-size: 1.9rem !important;
     font-family: 'Source Serif 4', serif !important;
 }
-[data-testid="stDataFrame"] { border: 1px solid #e2e8f0; border-radius: 8px; }
-hr { border-color: #e2e8f0 !important; }
+
+[data-testid="stDataFrame"] {
+    border: 1px solid #e5e9f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+[data-testid="stExpander"] {
+    border: 1px solid #e5e9f0 !important;
+    border-radius: 10px !important;
+    background: #ffffff;
+}
+
+.stButton > button {
+    background: #2563eb;
+    color: white;
+    border-radius: 8px;
+    border: none;
+    font-weight: 500;
+    padding: 0.5rem 1.25rem;
+}
+.stButton > button:hover {
+    background: #1d4ed8;
+    color: white;
+}
+
+.stTextInput input, .stMultiSelect [data-baseweb="select"] {
+    border-radius: 8px !important;
+    border: 1px solid #d6dbe3 !important;
+}
+
+hr { border-color: #e5e9f0 !important; }
+
 .section-label {
     font-family: 'DM Sans', sans-serif; font-size: 0.7rem; font-weight: 600;
     letter-spacing: 0.15em; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px;
 }
 .section-title {
-    font-family: 'Source Serif 4', serif; font-size: 1.6rem;
-    color: #1e293b; margin-bottom: 16px;
+    font-family: 'Source Serif 4', serif; font-size: 1.7rem;
+    color: #0f172a; margin-bottom: 18px;
 }
+
+[data-baseweb="tab-list"] {
+    gap: 4px;
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 10px;
+}
+[data-baseweb="tab"] {
+    border-radius: 8px !important;
+    font-weight: 500;
+    color: #64748b;
+}
+[aria-selected="true"][data-baseweb="tab"] {
+    background: white !important;
+    color: #0f172a !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
 #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
@@ -198,7 +262,7 @@ def load_sg_exams():
 def load_sg_notes():
     token = st.secrets.get("github", {}).get("token", "")
     repo = st.secrets.get("github", {}).get("repo", "")
-    path = "data/score_guarantee_notes.csv"
+    path = "data/score_guarantee_v2_notes.csv"
     if not token or not repo:
         return pd.DataFrame(columns=["student_id", "note", "color", "updated_at"])
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
@@ -213,7 +277,7 @@ def load_sg_notes():
 def save_sg_notes(notes_df):
     token = st.secrets.get("github", {}).get("token", "")
     repo = st.secrets.get("github", {}).get("repo", "")
-    path = "data/score_guarantee_notes.csv"
+    path = "data/score_guarantee_v2_notes.csv"
     if not token or not repo:
         return False
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
@@ -233,7 +297,7 @@ def save_sg_notes(notes_df):
 def load_sg_legend():
     token = st.secrets.get("github", {}).get("token", "")
     repo = st.secrets.get("github", {}).get("repo", "")
-    path = "data/score_guarantee_legend.csv"
+    path = "data/score_guarantee_v2_legend.csv"
     if not token or not repo:
         return {}
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
@@ -249,7 +313,7 @@ def load_sg_legend():
 def save_sg_legend(legend_dict):
     token = st.secrets.get("github", {}).get("token", "")
     repo = st.secrets.get("github", {}).get("repo", "")
-    path = "data/score_guarantee_legend.csv"
+    path = "data/score_guarantee_v2_legend.csv"
     if not token or not repo:
         return False
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
@@ -363,10 +427,14 @@ def load_premium_vs_sg_monthly():
 
 
 @st.cache_data(ttl=3600)
-def load_premium_advisor_lookup():
-    """MySQL: advisor per student, for attributing Premium-vs-SG revenue by advisor."""
+def load_premium_advisor_lookup(student_ids):
+    """MySQL: advisor per student, restricted to the given student_ids
+    (avoids a full unfiltered scan across every student in the system)."""
+    if not student_ids:
+        return pd.DataFrame(columns=["student_id", "advisor"])
     conn = get_mysql_connection()
-    query = """
+    ids_str = ",".join(str(int(s)) for s in student_ids if pd.notna(s))
+    query = f"""
     SELECT DISTINCT
         students.id AS student_id,
         CONCAT(advisors.first_name,' ',advisors.last_name) AS advisor
@@ -374,6 +442,7 @@ def load_premium_advisor_lookup():
         JOIN orbit_production.parents p ON students.parent_id = p.id
         JOIN orbit_production.employees e1 ON e1.id = p.advisor_id
         JOIN orbit_production.users advisors ON e1.user_id = advisors.id
+    WHERE students.id IN ({ids_str})
     """
     return pd.read_sql(query, conn)
 
@@ -417,320 +486,324 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+tab1, tab2, tab3 = st.tabs(["📋 Overview", "🎓 Student Data", "💰 Financial Data"])
+
 if df_sg.empty:
-    st.warning("Score guarantee data not available. Check GitHub secrets.")
+    with tab1:
+        st.warning("Score guarantee data not available. Check GitHub secrets.")
 else:
-    # ── New Student Alert ─────────────────────────────────────────────
-    sg_new_check = df_sg.copy()
-    sg_new_check["won_at"] = pd.to_datetime(sg_new_check["won_at"], errors="coerce")
-    seven_days_ago = pd.Timestamp.now() - pd.DateOffset(days=7)
-    new_students = sg_new_check[sg_new_check["won_at"] >= seven_days_ago].sort_values("student")
+    with tab1:
+        # ── New Student Alert ─────────────────────────────────────────────
+        sg_new_check = df_sg.copy()
+        sg_new_check["won_at"] = pd.to_datetime(sg_new_check["won_at"], errors="coerce")
+        seven_days_ago = pd.Timestamp.now() - pd.DateOffset(days=7)
+        new_students = sg_new_check[sg_new_check["won_at"] >= seven_days_ago].sort_values("student")
 
-    if len(new_students) > 0:
-        items = ""
-        for _, row in new_students.iterrows():
-            student = row.get("student", "Unknown")
-            advisor = row.get("advisor", "Unknown")
-            tutor = row.get("tutor", "Unknown") or "Not assigned"
-            fl = row.get("faculty_leader", "—") or "—"
-            won = row["won_at"].strftime("%b %d, %Y") if pd.notna(row.get("won_at")) else "—"
-            pkg = f"{row['package_hours']:.0f} hrs" if pd.notna(row.get("package_hours")) else "—"
-            items += (
-                f"<div style='background:white; border:1px solid #bae6fd; border-radius:6px; padding:8px 12px; margin:6px 0;'>"
-                f"<p style='color:#1e293b; font-weight:600; font-size:0.85rem; margin:0;'>{student}</p>"
-                f"<table style='width:100%; font-size:0.78rem; color:#64748b; margin-top:4px;'>"
-                f"<tr><td style='padding:1px 0;'>Advisor</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{advisor}</td></tr>"
-                f"<tr><td style='padding:1px 0;'>Tutor</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{tutor}</td></tr>"
-                f"<tr><td style='padding:1px 0;'>Faculty Leader</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{fl}</td></tr>"
-                f"<tr><td style='padding:1px 0;'>Package</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{pkg}</td></tr>"
-                f"<tr><td style='padding:1px 0;'>Won Date</td><td style='padding:1px 0; text-align:right; color:#0369a1; font-weight:600;'>{won}</td></tr>"
-                f"</table></div>"
+        if len(new_students) > 0:
+            items = ""
+            for _, row in new_students.iterrows():
+                student = row.get("student", "Unknown")
+                advisor = row.get("advisor", "Unknown")
+                tutor = row.get("tutor", "Unknown") or "Not assigned"
+                fl = row.get("faculty_leader", "—") or "—"
+                won = row["won_at"].strftime("%b %d, %Y") if pd.notna(row.get("won_at")) else "—"
+                pkg = f"{row['package_hours']:.0f} hrs" if pd.notna(row.get("package_hours")) else "—"
+                items += (
+                    f"<div style='background:white; border:1px solid #bae6fd; border-radius:6px; padding:8px 12px; margin:6px 0;'>"
+                    f"<p style='color:#1e293b; font-weight:600; font-size:0.85rem; margin:0;'>{student}</p>"
+                    f"<table style='width:100%; font-size:0.78rem; color:#64748b; margin-top:4px;'>"
+                    f"<tr><td style='padding:1px 0;'>Advisor</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{advisor}</td></tr>"
+                    f"<tr><td style='padding:1px 0;'>Tutor</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{tutor}</td></tr>"
+                    f"<tr><td style='padding:1px 0;'>Faculty Leader</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{fl}</td></tr>"
+                    f"<tr><td style='padding:1px 0;'>Package</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{pkg}</td></tr>"
+                    f"<tr><td style='padding:1px 0;'>Won Date</td><td style='padding:1px 0; text-align:right; color:#0369a1; font-weight:600;'>{won}</td></tr>"
+                    f"</table></div>"
+                )
+            st.markdown(
+                f"<div style='background:#f0f9ff; border:1px solid #bae6fd; border-radius:10px; padding:14px 16px; margin-bottom:16px;'>"
+                f"<p style='color:#0369a1; font-weight:600; font-size:0.85rem; margin:0 0 8px 0;'>"
+                f"🆕 NEW SCORE GUARANTEE STUDENTS THIS WEEK ({len(new_students)})</p>"
+                f"{items}</div>",
+                unsafe_allow_html=True,
             )
-        st.markdown(
-            f"<div style='background:#f0f9ff; border:1px solid #bae6fd; border-radius:10px; padding:14px 16px; margin-bottom:16px;'>"
-            f"<p style='color:#0369a1; font-weight:600; font-size:0.85rem; margin:0 0 8px 0;'>"
-            f"🆕 NEW SCORE GUARANTEE STUDENTS THIS WEEK ({len(new_students)})</p>"
-            f"{items}</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown("")
+            st.markdown("")
 
-    # ── Compute hidden tags ───────────────────────────────────────────
-    legend_for_hide = st.session_state.sg_legend
-    hide_tags_alert = set()
-    for emoji, label in legend_for_hide.items():
-        if str(label).strip().lower() in ["not score guarantee", "completed", "refunded"]:
-            hide_tags_alert.add(emoji)
+        # ── Compute hidden tags ───────────────────────────────────────────
+        legend_for_hide = st.session_state.sg_legend
+        hide_tags_alert = set()
+        for emoji, label in legend_for_hide.items():
+            if str(label).strip().lower() in ["not score guarantee", "completed", "refunded"]:
+                hide_tags_alert.add(emoji)
 
-    hidden_sids_alert = set()
-    if not st.session_state.sg_notes.empty and "color" in st.session_state.sg_notes.columns:
-        for _, nr in st.session_state.sg_notes.iterrows():
-            if str(nr.get("color", "")) in hide_tags_alert:
-                hidden_sids_alert.add(str(nr["student_id"]).split(".")[0])
+        hidden_sids_alert = set()
+        if not st.session_state.sg_notes.empty and "color" in st.session_state.sg_notes.columns:
+            for _, nr in st.session_state.sg_notes.iterrows():
+                if str(nr.get("color", "")) in hide_tags_alert:
+                    hidden_sids_alert.add(str(nr["student_id"]).split(".")[0])
 
-    # ── Score Guarantee Alerts ────────────────────────────────────────
-    sg_alert_data = df_sg.copy()
-    for col in ["starting_score", "starting_test_taken", "latest_test_score", "last_test_taken"]:
-        if col in sg_alert_data.columns:
-            sg_alert_data[col] = sg_alert_data[col].astype(object)
-    # Apply test type overrides to alert data too
-    if not st.session_state.sg_notes.empty and "test_type_override" in st.session_state.sg_notes.columns:
-        for _, nr in st.session_state.sg_notes.iterrows():
-            ov = str(nr.get("test_type_override", "") or "")
-            if ov not in ["SAT", "ACT"]:
-                continue
-            ov_sid = str(nr["student_id"]).split(".")[0]
-            for a_idx in sg_alert_data.index:
-                if str(sg_alert_data.at[a_idx, "student_id"]).split(".")[0] == ov_sid:
-                    if not df_sg_exams.empty:
-                        stu_ex = df_sg_exams[df_sg_exams["student_id"].astype(str).str.split(".").str[0] == ov_sid].copy()
-                        stu_ex["exam_date"] = pd.to_datetime(stu_ex["exam_date"], errors="coerce")
-                        stu_ex["score"] = pd.to_numeric(stu_ex["score"], errors="coerce")
-                        if ov == "SAT":
-                            typed = stu_ex[stu_ex["exam_type"].isin(["SAT", "Digital SAT"])]
+        # ── Score Guarantee Alerts ────────────────────────────────────────
+        sg_alert_data = df_sg.copy()
+        for col in ["starting_score", "starting_test_taken", "latest_test_score", "last_test_taken"]:
+            if col in sg_alert_data.columns:
+                sg_alert_data[col] = sg_alert_data[col].astype(object)
+        # Apply test type overrides to alert data too
+        if not st.session_state.sg_notes.empty and "test_type_override" in st.session_state.sg_notes.columns:
+            for _, nr in st.session_state.sg_notes.iterrows():
+                ov = str(nr.get("test_type_override", "") or "")
+                if ov not in ["SAT", "ACT"]:
+                    continue
+                ov_sid = str(nr["student_id"]).split(".")[0]
+                for a_idx in sg_alert_data.index:
+                    if str(sg_alert_data.at[a_idx, "student_id"]).split(".")[0] == ov_sid:
+                        if not df_sg_exams.empty:
+                            stu_ex = df_sg_exams[df_sg_exams["student_id"].astype(str).str.split(".").str[0] == ov_sid].copy()
+                            stu_ex["exam_date"] = pd.to_datetime(stu_ex["exam_date"], errors="coerce")
+                            stu_ex["score"] = pd.to_numeric(stu_ex["score"], errors="coerce")
+                            if ov == "SAT":
+                                typed = stu_ex[stu_ex["exam_type"].isin(["SAT", "Digital SAT"])]
+                            else:
+                                typed = stu_ex[stu_ex["exam_type"].isin(["ACT", "Digital ACT"])]
+                            typed = typed.dropna(subset=["score"])
+                            before = typed[typed["before_or_after_tutoring"] == "before"].sort_values("exam_date", ascending=False)
+                            sg_alert_data.at[a_idx, "starting_score"] = float(before.iloc[0]["score"]) if len(before) > 0 else np.nan
+                            sg_alert_data.at[a_idx, "starting_test_taken"] = before.iloc[0]["exam_date"] if len(before) > 0 else pd.NaT
+                        break
+        sg_alert_data["_sid_str"] = sg_alert_data["student_id"].astype(str).str.split(".").str[0]
+        sg_alert_data = sg_alert_data[~sg_alert_data["_sid_str"].isin(hidden_sids_alert)]
+        sg_alert_data.drop(columns=["_sid_str"], inplace=True)
+        for col in ["first_test_prep_session", "starting_test_taken", "won_at"]:
+            if col in sg_alert_data.columns:
+                sg_alert_data[col] = pd.to_datetime(sg_alert_data[col], errors="coerce")
+        for col in ["package_hours", "completed_test_prep_hours", "starting_score"]:
+            if col in sg_alert_data.columns:
+                sg_alert_data[col] = pd.to_numeric(sg_alert_data[col], errors="coerce")
+
+        # Alert 1: No baseline score
+        no_baseline = sg_alert_data[
+            sg_alert_data["first_test_prep_session"].notna()
+            & (sg_alert_data["starting_score"].isna()
+               | sg_alert_data["starting_test_taken"].isna()
+               | (sg_alert_data["starting_test_taken"] > sg_alert_data["first_test_prep_session"]))
+        ].sort_values("first_test_prep_session", ascending=True, na_position="first")
+
+        no_baseline_html = ""
+        if len(no_baseline) > 0:
+            items = ""
+            for _, row in no_baseline.iterrows():
+                student = row.get("student", "Unknown")
+                advisor = row.get("advisor", "Unknown")
+                first_sess = row["first_test_prep_session"].strftime("%Y-%m-%d") if pd.notna(row.get("first_test_prep_session")) else "—"
+                items += (
+                    f"<div style='background:white; border:1px solid #fecaca; border-radius:6px; padding:8px 12px; margin:6px 0;'>"
+                    f"<p style='color:#1e293b; font-weight:600; font-size:0.85rem; margin:0;'>{student}</p>"
+                    f"<table style='width:100%; font-size:0.78rem; color:#64748b; margin-top:4px;'>"
+                    f"<tr><td style='padding:1px 0;'>Advisor</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{advisor}</td></tr>"
+                    f"<tr><td style='padding:1px 0;'>Tutoring Since</td><td style='padding:1px 0; text-align:right; color:#991b1b; font-weight:600;'>{first_sess}</td></tr>"
+                    f"</table></div>"
+                )
+            no_baseline_html = (
+                    "<p style='color:#64748b; font-size:0.78rem; margin-bottom:10px; font-style:italic;'>"
+                    "Students who have started tutoring but do not have a test score recorded before their first session. "
+                    "A baseline is required to measure improvement and determine the score guarantee target.</p>"
+                ) + items
+
+        # Alert 2: Behind on exams
+        behind_on_exams = []
+        if not df_sg_sessions.empty and not df_sg_exams.empty:
+            for _, row in sg_alert_data.iterrows():
+                sid = row["student_id"]
+                pkg_hrs = row["package_hours"]
+                if pd.isna(pkg_hrs) or pd.isna(row.get("first_test_prep_session")):
+                    continue
+                required_total = 4
+                milestone_hours = [5, 10, 15, 20]
+                completed = row["completed_test_prep_hours"] if pd.notna(row.get("completed_test_prep_hours")) else 0
+                exams_expected = sum(1 for mh in milestone_hours if completed >= mh)
+                exams_taken = 0
+                if sid in df_sg_exams["student_id"].values:
+                    alert_exams = df_sg_exams[(df_sg_exams["student_id"] == sid) & (df_sg_exams["before_or_after_tutoring"] == "after")].copy()
+                    alert_exams["score"] = pd.to_numeric(alert_exams["score"], errors="coerce")
+                    # Detect test type for this student
+                    alert_baseline = row.get("starting_score")
+                    if pd.notna(alert_baseline):
+                        if alert_baseline > 100:
+                            alert_exams = alert_exams[alert_exams["exam_type"].isin(["SAT", "Digital SAT"])]
                         else:
-                            typed = stu_ex[stu_ex["exam_type"].isin(["ACT", "Digital ACT"])]
-                        typed = typed.dropna(subset=["score"])
-                        before = typed[typed["before_or_after_tutoring"] == "before"].sort_values("exam_date", ascending=False)
-                        sg_alert_data.at[a_idx, "starting_score"] = float(before.iloc[0]["score"]) if len(before) > 0 else np.nan
-                        sg_alert_data.at[a_idx, "starting_test_taken"] = before.iloc[0]["exam_date"] if len(before) > 0 else pd.NaT
-                    break
-    sg_alert_data["_sid_str"] = sg_alert_data["student_id"].astype(str).str.split(".").str[0]
-    sg_alert_data = sg_alert_data[~sg_alert_data["_sid_str"].isin(hidden_sids_alert)]
-    sg_alert_data.drop(columns=["_sid_str"], inplace=True)
-    for col in ["first_test_prep_session", "starting_test_taken", "won_at"]:
-        if col in sg_alert_data.columns:
-            sg_alert_data[col] = pd.to_datetime(sg_alert_data[col], errors="coerce")
-    for col in ["package_hours", "completed_test_prep_hours", "starting_score"]:
-        if col in sg_alert_data.columns:
-            sg_alert_data[col] = pd.to_numeric(sg_alert_data[col], errors="coerce")
+                            alert_exams = alert_exams[alert_exams["exam_type"].isin(["ACT", "Digital ACT"])]
+                    exams_taken = len(alert_exams)
+                if exams_expected > 0 and exams_taken < exams_expected:
+                    behind_on_exams.append({
+                        "student": row.get("student", "Unknown"),
+                        "advisor": row.get("advisor", "Unknown"),
+                        "tutor": row.get("tutor", "Unknown"),
+                        "exams_taken": exams_taken,
+                        "exams_expected": exams_expected,
+                        "completed": completed,
+                        "pkg_hrs": pkg_hrs,
+                        "required_total": required_total,
+                    })
+            behind_on_exams.sort(key=lambda x: x["student"])
 
-    # Alert 1: No baseline score
-    no_baseline = sg_alert_data[
-        sg_alert_data["first_test_prep_session"].notna()
-        & (sg_alert_data["starting_score"].isna()
-           | sg_alert_data["starting_test_taken"].isna()
-           | (sg_alert_data["starting_test_taken"] > sg_alert_data["first_test_prep_session"]))
-    ].sort_values("first_test_prep_session", ascending=True, na_position="first")
+        behind_html = ""
+        if len(behind_on_exams) > 0:
+            items = ""
+            for b in behind_on_exams:
+                items += (
+                    f"<div style='background:white; border:1px solid #fde68a; border-radius:6px; padding:8px 12px; margin:6px 0;'>"
+                    f"<p style='color:#1e293b; font-weight:600; font-size:0.85rem; margin:0;'>{b['student']}</p>"
+                    f"<table style='width:100%; font-size:0.78rem; color:#64748b; margin-top:4px;'>"
+                    f"<tr><td style='padding:1px 0;'>Advisor</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{b['advisor']}</td></tr>"
+                    f"<tr><td style='padding:1px 0;'>Tutor</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{b['tutor']}</td></tr>"
+                    f"<tr><td style='padding:1px 0;'>Exams</td><td style='padding:1px 0; text-align:right; color:#92400e; font-weight:600;'>{b['exams_taken']}/{b['exams_expected']} taken</td></tr>"
+                    f"<tr><td style='padding:1px 0;'>Hours</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{b['completed']:.0f}/20 hrs</td></tr>"
+                    f"</table></div>"
+                )
+            behind_html = (
+                    "<p style='color:#64748b; font-size:0.78rem; margin-bottom:10px; font-style:italic;'>"
+                    "Students who should have taken more practice tests based on hours completed. "
+                    "4 tests are required, spaced at 25%, 50%, 75%, and 100% of package hours.</p>"
+                ) + items
 
-    no_baseline_html = ""
-    if len(no_baseline) > 0:
-        items = ""
-        for _, row in no_baseline.iterrows():
-            student = row.get("student", "Unknown")
-            advisor = row.get("advisor", "Unknown")
-            first_sess = row["first_test_prep_session"].strftime("%Y-%m-%d") if pd.notna(row.get("first_test_prep_session")) else "—"
-            items += (
-                f"<div style='background:white; border:1px solid #fecaca; border-radius:6px; padding:8px 12px; margin:6px 0;'>"
-                f"<p style='color:#1e293b; font-weight:600; font-size:0.85rem; margin:0;'>{student}</p>"
-                f"<table style='width:100%; font-size:0.78rem; color:#64748b; margin-top:4px;'>"
-                f"<tr><td style='padding:1px 0;'>Advisor</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{advisor}</td></tr>"
-                f"<tr><td style='padding:1px 0;'>Tutoring Since</td><td style='padding:1px 0; text-align:right; color:#991b1b; font-weight:600;'>{first_sess}</td></tr>"
-                f"</table></div>"
-            )
-        no_baseline_html = (
-                "<p style='color:#64748b; font-size:0.78rem; margin-bottom:10px; font-style:italic;'>"
-                "Students who have started tutoring but do not have a test score recorded before their first session. "
-                "A baseline is required to measure improvement and determine the score guarantee target.</p>"
-            ) + items
-
-    # Alert 2: Behind on exams
-    behind_on_exams = []
-    if not df_sg_sessions.empty and not df_sg_exams.empty:
-        for _, row in sg_alert_data.iterrows():
-            sid = row["student_id"]
-            pkg_hrs = row["package_hours"]
-            if pd.isna(pkg_hrs) or pd.isna(row.get("first_test_prep_session")):
-                continue
-            required_total = 4
-            milestone_hours = [5, 10, 15, 20]
-            completed = row["completed_test_prep_hours"] if pd.notna(row.get("completed_test_prep_hours")) else 0
-            exams_expected = sum(1 for mh in milestone_hours if completed >= mh)
-            exams_taken = 0
-            if sid in df_sg_exams["student_id"].values:
-                alert_exams = df_sg_exams[(df_sg_exams["student_id"] == sid) & (df_sg_exams["before_or_after_tutoring"] == "after")].copy()
-                alert_exams["score"] = pd.to_numeric(alert_exams["score"], errors="coerce")
-                # Detect test type for this student
-                alert_baseline = row.get("starting_score")
-                if pd.notna(alert_baseline):
-                    if alert_baseline > 100:
-                        alert_exams = alert_exams[alert_exams["exam_type"].isin(["SAT", "Digital SAT"])]
+        # Alert 3: No score improvement
+        score_concerns = []
+        if not df_sg_exams.empty:
+            for _, row in sg_alert_data.iterrows():
+                sid = row["student_id"]
+                baseline = row["starting_score"]
+                if pd.isna(baseline) or sid not in df_sg_exams["student_id"].values:
+                    continue
+                stu_exams = df_sg_exams[df_sg_exams["student_id"] == sid].copy()
+                stu_exams["exam_date"] = pd.to_datetime(stu_exams["exam_date"], errors="coerce")
+                stu_exams["score"] = pd.to_numeric(stu_exams["score"], errors="coerce")
+                # Filter by test type
+                if pd.notna(baseline):
+                    if baseline > 100:
+                        stu_exams = stu_exams[stu_exams["exam_type"].isin(["SAT", "Digital SAT"])]
                     else:
-                        alert_exams = alert_exams[alert_exams["exam_type"].isin(["ACT", "Digital ACT"])]
-                exams_taken = len(alert_exams)
-            if exams_expected > 0 and exams_taken < exams_expected:
-                behind_on_exams.append({
-                    "student": row.get("student", "Unknown"),
-                    "advisor": row.get("advisor", "Unknown"),
-                    "tutor": row.get("tutor", "Unknown"),
-                    "exams_taken": exams_taken,
-                    "exams_expected": exams_expected,
-                    "completed": completed,
-                    "pkg_hrs": pkg_hrs,
-                    "required_total": required_total,
-                })
-        behind_on_exams.sort(key=lambda x: x["student"])
+                        stu_exams = stu_exams[stu_exams["exam_type"].isin(["ACT", "Digital ACT"])]
+                after_exams = stu_exams[
+                    (stu_exams["before_or_after_tutoring"] == "after") & stu_exams["score"].notna()
+                ].sort_values("exam_date")
+                if len(after_exams) == 0:
+                    continue
+                most_recent = after_exams.iloc[-1]["score"]
+                avg_score = after_exams["score"].mean()
+                recent_vs_baseline = most_recent - baseline
+                # Check against target, not just baseline
+                if baseline > 100:  # SAT
+                    target = baseline + 150 if baseline < 1350 else 1500
+                else:  # ACT
+                    target = baseline + 2 if baseline < 29 else 31
+                points_to_target = target - most_recent
 
-    behind_html = ""
-    if len(behind_on_exams) > 0:
-        items = ""
-        for b in behind_on_exams:
-            items += (
-                f"<div style='background:white; border:1px solid #fde68a; border-radius:6px; padding:8px 12px; margin:6px 0;'>"
-                f"<p style='color:#1e293b; font-weight:600; font-size:0.85rem; margin:0;'>{b['student']}</p>"
-                f"<table style='width:100%; font-size:0.78rem; color:#64748b; margin-top:4px;'>"
-                f"<tr><td style='padding:1px 0;'>Advisor</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{b['advisor']}</td></tr>"
-                f"<tr><td style='padding:1px 0;'>Tutor</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{b['tutor']}</td></tr>"
-                f"<tr><td style='padding:1px 0;'>Exams</td><td style='padding:1px 0; text-align:right; color:#92400e; font-weight:600;'>{b['exams_taken']}/{b['exams_expected']} taken</td></tr>"
-                f"<tr><td style='padding:1px 0;'>Hours</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{b['completed']:.0f}/20 hrs</td></tr>"
-                f"</table></div>"
-            )
-        behind_html = (
-                "<p style='color:#64748b; font-size:0.78rem; margin-bottom:10px; font-style:italic;'>"
-                "Students who should have taken more practice tests based on hours completed. "
-                "4 tests are required, spaced at 25%, 50%, 75%, and 100% of package hours.</p>"
-            ) + items
+                # Check if on pace toward target
+                on_pace = False
+                if len(after_exams) >= 2 and points_to_target > 0:
+                    total_needed = target - baseline
+                    expected = (total_needed / 4.0) * len(after_exams)
+                    actual = most_recent - baseline
+                    if total_needed > 0 and actual >= expected * 0.75:
+                        on_pace = True
 
-    # Alert 3: No score improvement
-    score_concerns = []
-    if not df_sg_exams.empty:
-        for _, row in sg_alert_data.iterrows():
-            sid = row["student_id"]
-            baseline = row["starting_score"]
-            if pd.isna(baseline) or sid not in df_sg_exams["student_id"].values:
-                continue
-            stu_exams = df_sg_exams[df_sg_exams["student_id"] == sid].copy()
-            stu_exams["exam_date"] = pd.to_datetime(stu_exams["exam_date"], errors="coerce")
-            stu_exams["score"] = pd.to_numeric(stu_exams["score"], errors="coerce")
-            # Filter by test type
-            if pd.notna(baseline):
-                if baseline > 100:
-                    stu_exams = stu_exams[stu_exams["exam_type"].isin(["SAT", "Digital SAT"])]
-                else:
-                    stu_exams = stu_exams[stu_exams["exam_type"].isin(["ACT", "Digital ACT"])]
-            after_exams = stu_exams[
-                (stu_exams["before_or_after_tutoring"] == "after") & stu_exams["score"].notna()
-            ].sort_values("exam_date")
-            if len(after_exams) == 0:
-                continue
-            most_recent = after_exams.iloc[-1]["score"]
-            avg_score = after_exams["score"].mean()
-            recent_vs_baseline = most_recent - baseline
-            # Check against target, not just baseline
-            if baseline > 100:  # SAT
-                target = baseline + 150 if baseline < 1350 else 1500
+                if (recent_vs_baseline <= 0 or points_to_target > 0) and not on_pace:
+                    if len(after_exams) >= 2:
+                        first_after = after_exams.iloc[0]["score"]
+                        trend = "📈 up" if most_recent > first_after else ("📉 down" if most_recent < first_after else "➡️ flat")
+                    else:
+                        trend = "—"
+                    score_concerns.append({
+                        "student": row.get("student", "Unknown"),
+                        "advisor": row.get("advisor", "Unknown"),
+                        "tutor": row.get("tutor", "Unknown"),
+                        "baseline": baseline,
+                        "most_recent": most_recent,
+                        "recent_change": recent_vs_baseline,
+                        "target": target,
+                        "points_to_target": points_to_target,
+                        "avg_score": avg_score,
+                        "num_exams": len(after_exams),
+                        "trend": trend,
+                    })
+            score_concerns.sort(key=lambda x: x["student"])
+
+        score_html = ""
+        if len(score_concerns) > 0:
+            items = ""
+            for sc in score_concerns:
+                items += (
+                    f"<div style='background:white; border:1px solid #fecaca; border-radius:6px; padding:8px 12px; margin:6px 0;'>"
+                    f"<p style='color:#1e293b; font-weight:600; font-size:0.85rem; margin:0;'>{sc['student']}</p>"
+                    f"<table style='width:100%; font-size:0.78rem; color:#64748b; margin-top:4px;'>"
+                    f"<tr><td style='padding:1px 0;'>Advisor</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{sc['advisor']}</td></tr>"
+                    f"<tr><td style='padding:1px 0;'>Tutor</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{sc['tutor']}</td></tr>"
+                    f"<tr><td style='padding:1px 0;'>Scores</td><td style='padding:1px 0; text-align:right; color:#991b1b; font-weight:600;'>{sc['baseline']:.0f} → {sc['most_recent']:.0f} ({sc['recent_change']:+.0f})</td></tr>"
+                    f"<tr><td style='padding:1px 0;'>Target</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{sc['target']:.0f} ({sc['points_to_target']:+.0f} needed)</td></tr>"
+                    f"<tr><td style='padding:1px 0;'>Exams / Trend</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{sc['num_exams']} exams {sc['trend']}</td></tr>"
+                    f"</table></div>"
+                )
+            score_html = (
+                    "<p style='color:#64748b; font-size:0.78rem; margin-bottom:10px; font-style:italic;'>"
+                    "Students whose latest score has not improved over baseline or who are not on pace to meet their target. "
+                    "SAT: &lt;1350 needs +150, 1350+ needs 1500. ACT: &lt;29 needs +2, 29+ needs 31. "
+                    "Students making proportional progress are not flagged.</p>"
+                ) + items
+
+        # Render alerts horizontally
+        alert_configs = [
+            ("⚠️ No Baseline Score", no_baseline_html, len(no_baseline) if len(no_baseline) > 0 else 0),
+            ("⚠️ Behind on Practice Tests", behind_html, len(behind_on_exams)),
+            ("⚠️ Off Target / No Improvement", score_html, len(score_concerns)),
+        ]
+        active_alerts = [(label, html, cnt) for label, html, cnt in alert_configs if html]
+        if active_alerts:
+            cols = st.columns(len(active_alerts))
+            for i, (label, html, cnt) in enumerate(active_alerts):
+                with cols[i]:
+                    with st.expander(f"{label} ({cnt})", expanded=False):
+                        st.markdown(html, unsafe_allow_html=True)
+            st.markdown("")
+        sg = df_sg.copy()
+        for col in ["won_at", "first_test_prep_session", "starting_test_taken", "last_test_taken"]:
+            if col in sg.columns:
+                sg[col] = pd.to_datetime(sg[col], errors="coerce")
+        for col in ["package_hours", "completed_test_prep_hours", "starting_score", "latest_test_score"]:
+            if col in sg.columns:
+                sg[col] = pd.to_numeric(sg[col], errors="coerce")
+        sg["score_change"] = sg["latest_test_score"] - sg["starting_score"]
+
+        # Add Faculty Leader from team roster based on tutor name
+        tutor_to_fl = df_roster[["tutor", "manager"]].drop_duplicates().rename(
+            columns={"tutor": "_tutor_match", "manager": "faculty_leader"}
+        )
+        # Match on first tutor if multiple
+        sg["_tutor_match"] = sg["tutor"].apply(
+            lambda x: x.split(",")[1].strip() if pd.notna(x) and "," in x else (x.split(",")[0].strip() if pd.notna(x) else None)
+        )
+        sg = sg.merge(tutor_to_fl, on="_tutor_match", how="left")
+        sg.drop(columns=["_tutor_match"], inplace=True)
+
+        # Score improvement targets (SAT: 400-1600 range, ACT: 1-36 range)
+        def calc_target_with_type(score, test_type):
+            if pd.isna(score):
+                return np.nan
+            if test_type == "SAT":
+                return score + 150 if score < 1350 else 1500
+            else:
+                return score + 2 if score < 29 else 31
+
+        def calc_target(score):
+            if pd.isna(score):
+                return np.nan
+            if score > 100:  # SAT
+                return score + 150 if score < 1350 else 1500
             else:  # ACT
-                target = baseline + 2 if baseline < 29 else 31
-            points_to_target = target - most_recent
-
-            # Check if on pace toward target
-            on_pace = False
-            if len(after_exams) >= 2 and points_to_target > 0:
-                total_needed = target - baseline
-                expected = (total_needed / 4.0) * len(after_exams)
-                actual = most_recent - baseline
-                if total_needed > 0 and actual >= expected * 0.75:
-                    on_pace = True
-
-            if (recent_vs_baseline <= 0 or points_to_target > 0) and not on_pace:
-                if len(after_exams) >= 2:
-                    first_after = after_exams.iloc[0]["score"]
-                    trend = "📈 up" if most_recent > first_after else ("📉 down" if most_recent < first_after else "➡️ flat")
-                else:
-                    trend = "—"
-                score_concerns.append({
-                    "student": row.get("student", "Unknown"),
-                    "advisor": row.get("advisor", "Unknown"),
-                    "tutor": row.get("tutor", "Unknown"),
-                    "baseline": baseline,
-                    "most_recent": most_recent,
-                    "recent_change": recent_vs_baseline,
-                    "target": target,
-                    "points_to_target": points_to_target,
-                    "avg_score": avg_score,
-                    "num_exams": len(after_exams),
-                    "trend": trend,
-                })
-        score_concerns.sort(key=lambda x: x["student"])
-
-    score_html = ""
-    if len(score_concerns) > 0:
-        items = ""
-        for sc in score_concerns:
-            items += (
-                f"<div style='background:white; border:1px solid #fecaca; border-radius:6px; padding:8px 12px; margin:6px 0;'>"
-                f"<p style='color:#1e293b; font-weight:600; font-size:0.85rem; margin:0;'>{sc['student']}</p>"
-                f"<table style='width:100%; font-size:0.78rem; color:#64748b; margin-top:4px;'>"
-                f"<tr><td style='padding:1px 0;'>Advisor</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{sc['advisor']}</td></tr>"
-                f"<tr><td style='padding:1px 0;'>Tutor</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{sc['tutor']}</td></tr>"
-                f"<tr><td style='padding:1px 0;'>Scores</td><td style='padding:1px 0; text-align:right; color:#991b1b; font-weight:600;'>{sc['baseline']:.0f} → {sc['most_recent']:.0f} ({sc['recent_change']:+.0f})</td></tr>"
-                f"<tr><td style='padding:1px 0;'>Target</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{sc['target']:.0f} ({sc['points_to_target']:+.0f} needed)</td></tr>"
-                f"<tr><td style='padding:1px 0;'>Exams / Trend</td><td style='padding:1px 0; text-align:right; color:#1e293b;'>{sc['num_exams']} exams {sc['trend']}</td></tr>"
-                f"</table></div>"
-            )
-        score_html = (
-                "<p style='color:#64748b; font-size:0.78rem; margin-bottom:10px; font-style:italic;'>"
-                "Students whose latest score has not improved over baseline or who are not on pace to meet their target. "
-                "SAT: &lt;1350 needs +150, 1350+ needs 1500. ACT: &lt;29 needs +2, 29+ needs 31. "
-                "Students making proportional progress are not flagged.</p>"
-            ) + items
-
-    # Render alerts horizontally
-    alert_configs = [
-        ("⚠️ No Baseline Score", no_baseline_html, len(no_baseline) if len(no_baseline) > 0 else 0),
-        ("⚠️ Behind on Practice Tests", behind_html, len(behind_on_exams)),
-        ("⚠️ Off Target / No Improvement", score_html, len(score_concerns)),
-    ]
-    active_alerts = [(label, html, cnt) for label, html, cnt in alert_configs if html]
-    if active_alerts:
-        cols = st.columns(len(active_alerts))
-        for i, (label, html, cnt) in enumerate(active_alerts):
-            with cols[i]:
-                with st.expander(f"{label} ({cnt})", expanded=False):
-                    st.markdown(html, unsafe_allow_html=True)
-        st.markdown("")
-    sg = df_sg.copy()
-    for col in ["won_at", "first_test_prep_session", "starting_test_taken", "last_test_taken"]:
-        if col in sg.columns:
-            sg[col] = pd.to_datetime(sg[col], errors="coerce")
-    for col in ["package_hours", "completed_test_prep_hours", "starting_score", "latest_test_score"]:
-        if col in sg.columns:
-            sg[col] = pd.to_numeric(sg[col], errors="coerce")
-    sg["score_change"] = sg["latest_test_score"] - sg["starting_score"]
-
-    # Add Faculty Leader from team roster based on tutor name
-    tutor_to_fl = df_roster[["tutor", "manager"]].drop_duplicates().rename(
-        columns={"tutor": "_tutor_match", "manager": "faculty_leader"}
-    )
-    # Match on first tutor if multiple
-    sg["_tutor_match"] = sg["tutor"].apply(
-        lambda x: x.split(",")[1].strip() if pd.notna(x) and "," in x else (x.split(",")[0].strip() if pd.notna(x) else None)
-    )
-    sg = sg.merge(tutor_to_fl, on="_tutor_match", how="left")
-    sg.drop(columns=["_tutor_match"], inplace=True)
-
-    # Score improvement targets (SAT: 400-1600 range, ACT: 1-36 range)
-    def calc_target_with_type(score, test_type):
-        if pd.isna(score):
-            return np.nan
-        if test_type == "SAT":
-            return score + 150 if score < 1350 else 1500
-        else:
-            return score + 2 if score < 29 else 31
-
-    def calc_target(score):
-        if pd.isna(score):
-            return np.nan
-        if score > 100:  # SAT
-            return score + 150 if score < 1350 else 1500
-        else:  # ACT
-            return score + 2 if score < 29 else 31
-    sg["test_type"] = sg["starting_score"].apply(
-        lambda x: "SAT" if pd.notna(x) and x > 100 else ("ACT" if pd.notna(x) else None)
-    )
-    sg["target_score"] = sg["starting_score"].apply(calc_target)
-    sg["points_to_target"] = sg["target_score"] - sg["latest_test_score"]
-    sg["on_track"] = sg["latest_test_score"] >= sg["target_score"]
+                return score + 2 if score < 29 else 31
+        sg["test_type"] = sg["starting_score"].apply(
+            lambda x: "SAT" if pd.notna(x) and x > 100 else ("ACT" if pd.notna(x) else None)
+        )
+        sg["target_score"] = sg["starting_score"].apply(calc_target)
+        sg["points_to_target"] = sg["target_score"] - sg["latest_test_score"]
+        sg["on_track"] = sg["latest_test_score"] >= sg["target_score"]
 
     # ── Apply test type overrides directly to sg ──────────────────────
     # ── Re-derive scores per student based on test_type ─────────────
@@ -990,888 +1063,736 @@ else:
 
     comp_df = pd.DataFrame(compliance_rows)
 
-    # ── Compliance summary metrics ────────────────────────────────────
-    def pct_pass(col):
-        valid = comp_df[col].dropna()
-        if len(valid) == 0:
-            return "—"
-        return f"{(valid.sum() / len(valid) * 100):.0f}%"
+    with tab2:
+        # ── Compliance summary metrics ────────────────────────────────────
+        def pct_pass(col):
+            valid = comp_df[col].dropna()
+            if len(valid) == 0:
+                return "—"
+            return f"{(valid.sum() / len(valid) * 100):.0f}%"
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total Packages", len(comp_df))
-    c2.metric("Pkg ≥ 20hrs", pct_pass("1_pkg_20hrs"))
-    c3.metric("Hours Completed", pct_pass("2_hours_used"))
-    c4.metric("Baseline Before Start", pct_pass("4_baseline"))
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Total Packages", len(comp_df))
+        c2.metric("Pkg ≥ 20hrs", pct_pass("1_pkg_20hrs"))
+        c3.metric("Hours Completed", pct_pass("2_hours_used"))
+        c4.metric("Baseline Before Start", pct_pass("4_baseline"))
 
-    c5, c6, c7, c8 = st.columns(4)
-    c5.metric("Pace 1-2 hrs/wk", pct_pass("3_pace_ok"))
-    c6.metric("100% Attendance", pct_pass("5_attendance"))
-    c7.metric("Enough Practice Tests", pct_pass("7_practice_tests"))
-    c8.metric("1-Week Test Gaps", pct_pass("8_week_gaps"))
+        c5, c6, c7, c8 = st.columns(4)
+        c5.metric("Pace 1-2 hrs/wk", pct_pass("3_pace_ok"))
+        c6.metric("100% Attendance", pct_pass("5_attendance"))
+        c7.metric("Enough Practice Tests", pct_pass("7_practice_tests"))
+        c8.metric("1-Week Test Gaps", pct_pass("8_week_gaps"))
 
-    st.markdown("")
+        st.markdown("")
 
-    # ── Compliance matrix ─────────────────────────────────────────────
-    st.markdown(
-        "<p class='section-label'>Compliance</p>"
-        "<p class='section-title'>Score Guarantee Requirements Checklist</p>",
-        unsafe_allow_html=True,
-    )
-
-    with st.expander("📖 What does each column check?", expanded=False):
-        st.markdown("""
-| Column | Requirement |
-|--------|------------|
-| **Pkg ≥20hr** | Package size must be at least 20 hours |
-| **Hrs Used** | Student must complete at least 20 hours of test prep tutoring |
-| **Pace** | Tutoring hours should be completed at a pace of roughly 1–2 hours per week (shown as hrs/wk) |
-| **Baseline** | Student must have a baseline score recorded before their first tutoring session |
-| **Attend** | Student must attend all scheduled sessions — no cancellations or no-shows (shown as attended/total) |
-| **Tests** | Student must take a minimum of 4 practice tests during their program (excluding baseline) |
-| **Gaps ≥7d** | There must be at least 1 week (7 days) between each practice test (shows minimum gap) |
-| **Final ≤14d** | Student must take the official exam within 14 days of their last tutoring session |
-| **Score** | Starting score → latest score (with change). Not a pass/fail check — shown for reference |
-| **Test** | SAT or ACT, auto-detected from baseline score. Can be overridden in Edit Tags |
-| **Target** | SAT: below 1350 baseline needs +150 points; 1350+ needs to reach 1500. ACT: below 29 needs +2; 29+ needs 31 |
-| **To Target** | Whether the student's latest score meets or exceeds the target (✅ ahead / ❌ points needed) |
-| **Sess Gap** | Flags if there is a gap of 2+ weeks (14 days) between any consecutive tutoring sessions |
-| **Tag** | Custom color tag for tracking purposes |
-| **Notes** | Custom notes — persists across sessions |
-""")
-
-    # Filters
-    fc1, fc2, fc3, fc4 = st.columns(4)
-    with fc1:
-        sg_students = sorted(comp_df["student"].dropna().unique())
-        sel_students = st.multiselect("Filter by Student", sg_students, key="sg_filter_student")
-    with fc2:
-        sg_tutors = sorted(comp_df["tutor"].dropna().unique())
-        sel_tutors = st.multiselect("Filter by Tutor", sg_tutors, key="sg_filter_tutor")
-    with fc3:
-        sg_advisors = sorted(comp_df["advisor"].dropna().unique())
-        sel_advisors = st.multiselect("Filter by Advisor", sg_advisors, key="sg_filter_advisor")
-    with fc4:
-        sg_fls = sorted(comp_df["faculty_leader"].dropna().unique())
-        sel_fls = st.multiselect("Filter by Faculty Leader", sg_fls, key="sg_filter_fl")
-
-    filtered_comp = comp_df.copy()
-
-    # Blank field filters
-    bf1, bf2 = st.columns(2)
-    with bf1:
-        show_blank_fl = st.checkbox("Show only blank Faculty Leader", key="sg_blank_fl")
-    with bf2:
-        show_blank_tutor = st.checkbox("Show only blank Tutor", key="sg_blank_tutor")
-    if show_blank_fl:
-        filtered_comp = filtered_comp[filtered_comp["faculty_leader"].isna() | (filtered_comp["faculty_leader"] == "") | (filtered_comp["faculty_leader"] == "—")]
-    if show_blank_tutor:
-        filtered_comp = filtered_comp[filtered_comp["tutor"].isna() | (filtered_comp["tutor"] == "") | (filtered_comp["tutor"].str.strip() == "")]
-
-    if sel_students:
-        filtered_comp = filtered_comp[filtered_comp["student"].isin(sel_students)]
-    if sel_tutors:
-        filtered_comp = filtered_comp[filtered_comp["tutor"].isin(sel_tutors)]
-    if sel_advisors:
-        filtered_comp = filtered_comp[filtered_comp["advisor"].isin(sel_advisors)]
-    if sel_fls:
-        filtered_comp = filtered_comp[filtered_comp["faculty_leader"].isin(sel_fls)]
-    filtered_comp = filtered_comp.sort_values("student")
-
-    def status_icon(val):
-        if val is True:
-            return "✅"
-        elif val is False:
-            return "❌"
-        return "—"
-
-    # Merge notes into comp data
-    notes_merged = st.session_state.sg_notes.copy() if not st.session_state.sg_notes.empty else pd.DataFrame(columns=["student_id", "note", "color"])
-    if "color" not in notes_merged.columns:
-        notes_merged["color"] = ""
-    if "test_type_override" not in notes_merged.columns:
-        notes_merged["test_type_override"] = ""
-    merge_cols = ["student_id", "note", "color", "test_type_override"]
-    # Ensure student_id types match for merge
-    notes_merged["student_id"] = pd.to_numeric(notes_merged["student_id"], errors="coerce")
-    filtered_comp["student_id"] = pd.to_numeric(filtered_comp["student_id"], errors="coerce")
-    filtered_comp = filtered_comp.merge(notes_merged[merge_cols], on="student_id", how="left")
-    filtered_comp["note"] = filtered_comp["note"].fillna("")
-    filtered_comp["color"] = filtered_comp["color"].fillna("")
-    if "test_type_override" not in filtered_comp.columns:
-        filtered_comp["test_type_override"] = ""
-    filtered_comp["test_type_override"] = filtered_comp["test_type_override"].fillna("")
-
-    # Hide students tagged as "Not Score Guarantee" or "Completed"
-    legend = st.session_state.sg_legend
-    hide_tags = set()
-    for emoji, label in legend.items():
-        if str(label).strip().lower() in ["not score guarantee", "completed", "refunded"]:
-            hide_tags.add(emoji)
-
-    show_hidden = st.checkbox("Show hidden students (Not Score Guarantee / Completed / Refunded)", value=False, key="sg_show_hidden")
-    if not show_hidden and hide_tags:
-        filtered_comp = filtered_comp[~filtered_comp["color"].isin(hide_tags)]
-
-    # Color tag filter
-    active_tags = [c for c in filtered_comp["color"].unique() if c and str(c).strip()]
-    if active_tags:
-        legend = st.session_state.sg_legend
-        tag_display = {t: f"{t} {legend[t]}" if legend.get(t) else t for t in sorted(active_tags)}
-        tag_options = list(tag_display.values())
-        tag_reverse = {v: k for k, v in tag_display.items()}
-        tag_selection = st.multiselect("Filter by Tag", tag_options, key="sg_filter_tag")
-        if tag_selection:
-            selected_raw_tags = [tag_reverse[s] for s in tag_selection]
-            filtered_comp = filtered_comp[filtered_comp["color"].isin(selected_raw_tags)]
-
-    filtered_comp = filtered_comp.reset_index(drop=True)
-
-    matrix = filtered_comp[["student", "tutor", "advisor", "faculty_leader"]].copy()
-    matrix = matrix.rename(columns={"faculty_leader": "Faculty Leader"})
-    matrix["Pkg ≥20hr"] = filtered_comp.apply(
-        lambda r: f"{status_icon(r['1_pkg_20hrs'])} {r['package_hours']:.0f}hr" if pd.notna(r.get("package_hours")) else "—", axis=1
-    )
-    matrix["Hrs Used"] = filtered_comp.apply(
-        lambda r: f"{status_icon(r['2_hours_used'])} {r['completed_hours']:.1f}/20" if pd.notna(r.get("completed_hours")) else "—", axis=1
-    )
-    matrix["Pace"] = filtered_comp.apply(
-        lambda r: f"{status_icon(r['3_pace_ok'])} ({r['3_pace_val']:.1f}/wk)" if pd.notna(r.get("3_pace_val")) else status_icon(r["3_pace_ok"]), axis=1
-    )
-    matrix["Baseline"] = filtered_comp.apply(
-        lambda r: f"{status_icon(r['4_baseline'])} {r['starting_score']:.0f}" if pd.notna(r.get("starting_score")) else f"{status_icon(r['4_baseline'])}", axis=1
-    )
-    matrix["Attend"] = filtered_comp.apply(
-        lambda r: f"{status_icon(r['5_attendance'])} ({int(r['5_attended'])}/{int(r['5_total'])})" if pd.notna(r.get("5_attended")) else "—", axis=1
-    )
-    matrix["Tests"] = filtered_comp.apply(
-        lambda r: f"{status_icon(r['7_practice_tests'])} ({int(r['7_taken'])}/{int(r['7_required'])})" if pd.notna(r.get("7_taken")) else "—", axis=1
-    )
-    matrix["Gaps ≥7d"] = filtered_comp.apply(
-        lambda r: f"{status_icon(r['8_week_gaps'])} (min {int(r['8_min_gap'])}d)" if pd.notna(r.get("8_min_gap")) else status_icon(r["8_week_gaps"]), axis=1
-    )
-    matrix["Final ≤14d"] = filtered_comp.apply(
-        lambda r: f"{status_icon(r['9_final_14days'])} ({int(r['9_days_after'])}d)" if pd.notna(r.get("9_days_after")) else "—", axis=1
-    )
-    matrix["Score"] = filtered_comp.apply(
-        lambda r: f"{r['starting_score']:.0f}→{r['latest_score']:.0f} ({r['score_change']:+.0f})"
-        if pd.notna(r.get("starting_score")) and pd.notna(r.get("latest_score")) else "—", axis=1
-    )
-    matrix["Test"] = filtered_comp.apply(
-        lambda r: "SAT" if pd.notna(r.get("starting_score")) and r["starting_score"] > 100 else ("ACT" if pd.notna(r.get("starting_score")) else "—"), axis=1
-    )
-    matrix["Target"] = filtered_comp.apply(
-        lambda r: f"{r['target_score']:.0f}" if pd.notna(r.get("target_score")) else "—", axis=1
-    )
-    matrix["To Target"] = filtered_comp.apply(
-        lambda r: (
-            f"✅ +{abs(r['points_to_target']):.0f} ahead" if pd.notna(r.get("on_track")) and bool(r["on_track"])
-            else f"❌ {r['points_to_target']:.0f} needed" if pd.notna(r.get("points_to_target"))
-            else "—"
-        ), axis=1
-    )
-    matrix = matrix.rename(columns={"student": "Student", "tutor": "Tutor", "advisor": "Advisor"})
-
-    # Color tag and notes — always last
-    color_options = ["", "🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "⚫", "🟤"]
-    matrix["Sess Gap"] = filtered_comp.apply(
-        lambda r: f"⚠️ {int(r['max_session_gap'])}d" if pd.notna(r.get("session_gap")) and bool(r.get("session_gap")) else (
-            f"✅ {int(r['max_session_gap'])}d" if pd.notna(r.get("max_session_gap")) else "—"
-        ), axis=1
-    )
-    matrix["Tag"] = filtered_comp["color"]
-    matrix["Notes"] = filtered_comp["note"]
-
-    # Editable notes in table
-    disabled_cols = [c for c in matrix.columns if c not in ["Notes", "Tag"]]
-    # Reorder: Tag first, Notes last
-    col_order = ["Tag"] + [c for c in matrix.columns if c not in ["Tag", "Notes"]] + ["Notes"]
-    matrix = matrix[col_order]
-
-    col_config = {
-        "Student": st.column_config.TextColumn("Student", width=140),
-        "Tutor": st.column_config.TextColumn("Tutor", width=140),
-        "Advisor": st.column_config.TextColumn("Advisor", width=130),
-        "Pkg ≥20hr": st.column_config.TextColumn("Pkg ≥20hr", width=90),
-        "Hrs Used": st.column_config.TextColumn("Hrs Used", width=100),
-        "Pace": st.column_config.TextColumn("Pace", width=110),
-        "Baseline": st.column_config.TextColumn("Baseline", width=85),
-        "Attend": st.column_config.TextColumn("Attend", width=90),
-        "Tests": st.column_config.TextColumn("Tests", width=75),
-        "Gaps ≥7d": st.column_config.TextColumn("Gaps ≥7d", width=90),
-        "Final ≤14d": st.column_config.TextColumn("Final ≤14d", width=70),
-        "Score": st.column_config.TextColumn("Score", width=130),
-        "Test": st.column_config.TextColumn("Test", width=50),
-        "Target": st.column_config.TextColumn("Target", width=60),
-        "To Target": st.column_config.TextColumn("To Target", width=130),
-        "Tag": st.column_config.SelectboxColumn(
-                "Tag",
-                options=["", "🔴", "🟠", "🟡", "🟢", "🔵", "🟣"],
-                width=60,
-            ),
-            "Notes": st.column_config.TextColumn("Notes", width="large"),
-    }
-    # Color map for row shading
-    color_bg_map = {
-        "🔴": "rgba(239,68,68,0.12)",
-        "🟠": "rgba(249,115,22,0.12)",
-        "🟡": "rgba(234,179,8,0.12)",
-        "🟢": "rgba(34,197,94,0.12)",
-        "🔵": "rgba(59,130,246,0.12)",
-        "🟣": "rgba(168,85,247,0.12)",
-            "⚫": "rgba(0,0,0,0.08)",
-            "🟤": "rgba(180,83,9,0.12)",
-    }
-
-    def shade_rows(row):
-        tag = row.get("Tag", "")
-        bg = color_bg_map.get(str(tag).strip(), "")
-        if bg:
-            return [f"background-color: {bg}"] * len(row)
-        return [""] * len(row)
-
-    styled = matrix.style.apply(shade_rows, axis=1)
-    st.dataframe(
-        styled,
-        hide_index=True,
-        use_container_width=True,
-        height=min(700, len(matrix) * 38 + 60),
-        column_config={
-            "Tag": st.column_config.TextColumn("Tag", width=50),
-            "Student": st.column_config.TextColumn("Student", width=140),
-            "Tutor": st.column_config.TextColumn("Tutor", width=150),
-            "Advisor": st.column_config.TextColumn("Advisor", width=130),
-            "Faculty Leader": st.column_config.TextColumn("Faculty Leader", width=140),
-            "Pkg ≥20hr": st.column_config.TextColumn("Pkg ≥20hr", width=95),
-            "Hrs Used": st.column_config.TextColumn("Hrs Used", width=105),
-            "Pace": st.column_config.TextColumn("Pace", width=120),
-            "Baseline": st.column_config.TextColumn("Baseline", width=90),
-            "Attend": st.column_config.TextColumn("Attend", width=95),
-            "Tests": st.column_config.TextColumn("Tests", width=80),
-            "Gaps ≥7d": st.column_config.TextColumn("Gaps ≥7d", width=95),
-            "Final ≤14d": st.column_config.TextColumn("Final ≤14d", width=75),
-            "Score": st.column_config.TextColumn("Score", width=140),
-            "Test": st.column_config.TextColumn("Test", width=55),
-            "Target": st.column_config.TextColumn("Target", width=65),
-            "To Target": st.column_config.TextColumn("To Target", width=140),
-            "Notes": st.column_config.TextColumn("Notes", width="large"),
-        },
-    )
-
-    # Download options
-    dl1, dl2 = st.columns(2)
-    with dl1:
-        csv_data = matrix.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            "📥 Download as CSV",
-            data=csv_data,
-            file_name=f"score_guarantee_checklist_{date.today().isoformat()}.csv",
-            mime="text/csv",
-            key="sg_csv_download",
-        )
-    with dl2:
-        # Build a clean Excel export
-        import io as _io
-        excel_buffer = _io.BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
-            matrix.to_excel(writer, index=False, sheet_name="Checklist")
-            # Auto-size columns
-            ws = writer.sheets["Checklist"]
-            for col_idx, col_name in enumerate(matrix.columns, 1):
-                max_len = max(
-                    len(str(col_name)),
-                    matrix[col_name].astype(str).str.len().max() if len(matrix) > 0 else 0
-                )
-                ws.column_dimensions[ws.cell(row=1, column=col_idx).column_letter].width = min(max_len + 3, 40)
-        excel_buffer.seek(0)
-        st.download_button(
-            "📥 Download as Excel",
-            data=excel_buffer,
-            file_name=f"score_guarantee_checklist_{date.today().isoformat()}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key="sg_xlsx_download",
-        )
-
-    # Editable tag and notes in expander
-    with st.expander("✏️ Edit Tags, Test Type & Notes", expanded=False):
-        legend = st.session_state.sg_legend
-        tag_emojis = ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "⚫", "🟤"]
-        tag_to_labeled = {"": "— None —"}
-        for e in tag_emojis:
-            tag_to_labeled[e] = f"{e} {legend[e]}" if legend.get(e) else e
-        labeled_to_tag = {v: k for k, v in tag_to_labeled.items()}
-        labeled_options = list(tag_to_labeled.values())
-
-        eq_students = sorted(sg["student"].dropna().unique())
-        default_idx = 0
-        if "sg_active_student" in st.session_state and st.session_state["sg_active_student"] in eq_students:
-            default_idx = eq_students.index(st.session_state["sg_active_student"])
-        eq_selected = st.selectbox("Select student:", eq_students, index=default_idx, key="eq_student_select")
-
-        if eq_selected:
-            eq_row = sg[sg["student"] == eq_selected].iloc[0]
-            eq_sid = eq_row["student_id"]
-            sid_str = str(eq_sid).split(".")[0]
-
-            # Load existing values
-            eq_existing_note = ""
-            eq_existing_color = ""
-            eq_existing_test = ""
-            eq_updated = ""
-            eq_notes_df = st.session_state.sg_notes
-            if not eq_notes_df.empty:
-                mask = eq_notes_df["student_id"].astype(str).str.split(".").str[0] == sid_str
-                if mask.any():
-                    row_data = eq_notes_df.loc[mask].iloc[0]
-                    eq_existing_note = str(row_data.get("note", ""))
-                    if eq_existing_note == "nan":
-                        eq_existing_note = ""
-                    eq_existing_color = str(row_data.get("color", ""))
-                    if eq_existing_color == "nan":
-                        eq_existing_color = ""
-                    eq_existing_test = str(row_data.get("test_type_override", ""))
-                    if eq_existing_test == "nan":
-                        eq_existing_test = ""
-                    eq_updated = str(row_data.get("updated_at", ""))
-                    if eq_updated == "nan":
-                        eq_updated = ""
-
-            # Show current student info
-            st.markdown(f"**Tutor:** {eq_row.get('tutor', '—')} | **Advisor:** {eq_row.get('advisor', '—')} | **FL:** {eq_row.get('faculty_leader', '—')}")
-            if eq_updated:
-                st.markdown(f"<p style='color:#94a3b8; font-size:0.75rem;'>Last updated: {eq_updated}</p>", unsafe_allow_html=True)
-
-            ec1, ec2 = st.columns(2)
-            with ec1:
-                current_tag_label = tag_to_labeled.get(eq_existing_color, "— None —")
-                tag_idx = labeled_options.index(current_tag_label) if current_tag_label in labeled_options else 0
-                eq_tag = st.selectbox("Tag:", labeled_options, index=tag_idx, key=f"eq_tag_{sid_str}")
-            with ec2:
-                test_options = ["Auto", "SAT", "ACT"]
-                current_test = eq_existing_test if eq_existing_test in ["SAT", "ACT"] else "Auto"
-                eq_test = st.selectbox("Test Type:", test_options, index=test_options.index(current_test), key=f"eq_test_{sid_str}")
-
-            eq_note = st.text_area("Notes:", value=eq_existing_note, height=150, key=f"eq_note_{eq_sid}")
-
-            if st.button("💾 Save Changes", key=f"eq_save_{eq_sid}", use_container_width=True):
-                now_str = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")
-                save_color = labeled_to_tag.get(eq_tag, "")
-                save_test = "" if eq_test == "Auto" else eq_test
-
-                save_notes = st.session_state.sg_notes.copy()
-                for col in ["note", "color", "updated_at"]:
-                    if col in save_notes.columns:
-                        save_notes[col] = save_notes[col].astype(str).replace("nan", "")
-                if "test_type_override" not in save_notes.columns:
-                    save_notes["test_type_override"] = ""
-                save_notes["test_type_override"] = save_notes["test_type_override"].astype(str).replace("nan", "")
-                save_notes["student_id"] = save_notes["student_id"].astype(str)
-
-                m = save_notes["student_id"].str.split(".").str[0] == sid_str
-                if m.any():
-                    save_notes.loc[m, "note"] = eq_note
-                    save_notes.loc[m, "color"] = save_color
-                    save_notes.loc[m, "test_type_override"] = save_test
-                    save_notes.loc[m, "updated_at"] = now_str
-                else:
-                    new_r = pd.DataFrame([{"student_id": sid_str, "note": eq_note, "color": save_color, "test_type_override": save_test, "updated_at": now_str}])
-                    save_notes = pd.concat([save_notes, new_r], ignore_index=True)
-
-                if save_sg_notes(save_notes):
-                    st.session_state.sg_notes = save_notes
-                    st.rerun()
-
-        # Set edited_matrix to None so the old change detection doesn't run
-        edited_matrix = None
-
-            # ── Color Legend ───────────────────────────────────────────────────
-    legend = st.session_state.sg_legend
-    with st.expander("🎨 Color Legend — click to edit", expanded=False):
-        st.markdown("<p style='color:#64748b; font-size:0.82rem;'>Define what each color tag means:</p>", unsafe_allow_html=True)
-        st.markdown("<p style='color:#94a3b8; font-size:0.75rem; font-style:italic;'>💡 Students tagged with labels named exactly \"Not Score Guarantee\", \"Completed\", or \"Refunded\" will be automatically hidden from all tables and alerts. Use the checkbox above the table to show them again.</p>", unsafe_allow_html=True)
-        legend_colors = ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "⚫", "🟤"]
-        new_legend = {}
-        lc1, lc2 = st.columns(2)
-        for idx, color in enumerate(legend_colors):
-            col = lc1 if idx < 4 else lc2
-            with col:
-                label = st.text_input(
-                    f"{color}",
-                    value=legend.get(color, ""),
-                    key=f"legend_{color}",
-                    placeholder="Enter label...",
-                )
-                new_legend[color] = label
-
-        if st.button("💾 Save Legend", key="save_legend"):
-            if save_sg_legend(new_legend):
-                st.session_state.sg_legend = new_legend
-                st.rerun()
-
-    # Show active legend inline
-    active_legend = {k: v for k, v in st.session_state.sg_legend.items() if v}
-    if active_legend:
-        legend_str = " &nbsp;&nbsp;|&nbsp;&nbsp; ".join(
-            [f"{k} {v}" for k, v in active_legend.items()]
-        )
+        # ── Compliance matrix ─────────────────────────────────────────────
         st.markdown(
-            f"<p style='font-size:0.78rem; color:#64748b; margin-bottom:8px;'>{legend_str}</p>",
+            "<p class='section-label'>Compliance</p>"
+            "<p class='section-title'>Score Guarantee Requirements Checklist</p>",
             unsafe_allow_html=True,
         )
 
-    # Detect and save note/tag changes from expander
-    if edited_matrix is not None and False:  # disabled — handled in expander
-        changed = False
-        notes_df = st.session_state.sg_notes.copy()
-        if "color" not in notes_df.columns:
-            notes_df["color"] = ""
-        # Ensure all columns are string type to avoid dtype errors
-        for col in ["note", "color", "updated_at"]:
-            if col in notes_df.columns:
-                notes_df[col] = notes_df[col].astype(str).replace("nan", "")
-        notes_df["student_id"] = notes_df["student_id"].astype(str)
+        with st.expander("📖 What does each column check?", expanded=False):
+            st.markdown("""
+    | Column | Requirement |
+    |--------|------------|
+    | **Pkg ≥20hr** | Package size must be at least 20 hours |
+    | **Hrs Used** | Student must complete at least 20 hours of test prep tutoring |
+    | **Pace** | Tutoring hours should be completed at a pace of roughly 1–2 hours per week (shown as hrs/wk) |
+    | **Baseline** | Student must have a baseline score recorded before their first tutoring session |
+    | **Attend** | Student must attend all scheduled sessions — no cancellations or no-shows (shown as attended/total) |
+    | **Tests** | Student must take a minimum of 4 practice tests during their program (excluding baseline) |
+    | **Gaps ≥7d** | There must be at least 1 week (7 days) between each practice test (shows minimum gap) |
+    | **Final ≤14d** | Student must take the official exam within 14 days of their last tutoring session |
+    | **Score** | Starting score → latest score (with change). Not a pass/fail check — shown for reference |
+    | **Test** | SAT or ACT, auto-detected from baseline score. Can be overridden in Edit Tags |
+    | **Target** | SAT: below 1350 baseline needs +150 points; 1350+ needs to reach 1500. ACT: below 29 needs +2; 29+ needs 31 |
+    | **To Target** | Whether the student's latest score meets or exceeds the target (✅ ahead / ❌ points needed) |
+    | **Sess Gap** | Flags if there is a gap of 2+ weeks (14 days) between any consecutive tutoring sessions |
+    | **Tag** | Custom color tag for tracking purposes |
+    | **Notes** | Custom notes — persists across sessions |
+    """)
 
-        if "test_type_override" not in notes_df.columns:
-            notes_df["test_type_override"] = ""
-        for col in ["test_type_override"]:
-            if col in notes_df.columns:
-                notes_df[col] = notes_df[col].astype(str).replace("nan", "")
+        # Filters
+        fc1, fc2, fc3, fc4 = st.columns(4)
+        with fc1:
+            sg_students = sorted(comp_df["student"].dropna().unique())
+            sel_students = st.multiselect("Filter by Student", sg_students, key="sg_filter_student")
+        with fc2:
+            sg_tutors = sorted(comp_df["tutor"].dropna().unique())
+            sel_tutors = st.multiselect("Filter by Tutor", sg_tutors, key="sg_filter_tutor")
+        with fc3:
+            sg_advisors = sorted(comp_df["advisor"].dropna().unique())
+            sel_advisors = st.multiselect("Filter by Advisor", sg_advisors, key="sg_filter_advisor")
+        with fc4:
+            sg_fls = sorted(comp_df["faculty_leader"].dropna().unique())
+            sel_fls = st.multiselect("Filter by Faculty Leader", sg_fls, key="sg_filter_fl")
 
-        for i in range(len(edited_matrix)):
-            new_note = str(edited_matrix.iloc[i].get("Notes", "") or "")
-            new_color_raw = str(edited_matrix.iloc[i].get("Tag", "") or "")
-            new_color = new_color_raw.split(" ")[0].strip() if new_color_raw else ""
-            new_test_type = str(edited_matrix.iloc[i].get("Test Type", "") or "")
-            if new_test_type == "Auto":
-                new_test_type = ""
-            old_note = str(filtered_comp.iloc[i].get("note", "") or "")
-            old_color = str(filtered_comp.iloc[i].get("color", "") or "")
-            old_test_type = str(filtered_comp.iloc[i].get("test_type_override", "") or "")
+        filtered_comp = comp_df.copy()
 
-            if new_note != old_note or new_color != old_color or new_test_type != old_test_type:
-                sid = str(student_ids_ordered[i])
-                now_str = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")
-                mask = notes_df["student_id"] == sid
-                if mask.any():
-                    notes_df.loc[mask, "note"] = new_note
-                    notes_df.loc[mask, "color"] = new_color
-                    notes_df.loc[mask, "test_type_override"] = new_test_type
-                    notes_df.loc[mask, "updated_at"] = now_str
-                else:
-                    new_row = pd.DataFrame([{"student_id": sid, "note": new_note, "color": new_color, "test_type_override": new_test_type, "updated_at": now_str}])
-                    notes_df = pd.concat([notes_df, new_row], ignore_index=True)
-                changed = True
-        if changed:
-            if save_sg_notes(notes_df):
-                st.session_state.sg_notes = notes_df
-                st.rerun()
+        # Blank field filters
+        bf1, bf2 = st.columns(2)
+        with bf1:
+            show_blank_fl = st.checkbox("Show only blank Faculty Leader", key="sg_blank_fl")
+        with bf2:
+            show_blank_tutor = st.checkbox("Show only blank Tutor", key="sg_blank_tutor")
+        if show_blank_fl:
+            filtered_comp = filtered_comp[filtered_comp["faculty_leader"].isna() | (filtered_comp["faculty_leader"] == "") | (filtered_comp["faculty_leader"] == "—")]
+        if show_blank_tutor:
+            filtered_comp = filtered_comp[filtered_comp["tutor"].isna() | (filtered_comp["tutor"] == "") | (filtered_comp["tutor"].str.strip() == "")]
 
-    st.markdown("<div id='student-detail-anchor'></div>", unsafe_allow_html=True)
-    # ── Student Detail Drilldown ──────────────────────────────────────
-    st.markdown("")
-    st.markdown(
-        "<p class='section-label'>Drilldown</p>"
-        "<p class='section-title'>Student Detail</p>",
-        unsafe_allow_html=True,
-    )
+        if sel_students:
+            filtered_comp = filtered_comp[filtered_comp["student"].isin(sel_students)]
+        if sel_tutors:
+            filtered_comp = filtered_comp[filtered_comp["tutor"].isin(sel_tutors)]
+        if sel_advisors:
+            filtered_comp = filtered_comp[filtered_comp["advisor"].isin(sel_advisors)]
+        if sel_fls:
+            filtered_comp = filtered_comp[filtered_comp["faculty_leader"].isin(sel_fls)]
+        filtered_comp = filtered_comp.sort_values("student")
 
-    student_names = sorted(sg["student"].dropna().unique())
-    detail_default_idx = 0
-    if "sg_active_student" in st.session_state and st.session_state["sg_active_student"] in student_names:
-        detail_default_idx = student_names.index(st.session_state["sg_active_student"])
-    selected_student = st.selectbox("Select a student:", student_names, index=detail_default_idx, key="sg_student_select")
+        def status_icon(val):
+            if val is True:
+                return "✅"
+            elif val is False:
+                return "❌"
+            return "—"
 
-    if selected_student:
-        stu_row = sg[sg["student"] == selected_student].iloc[0]
-        sid = stu_row["student_id"]
+        # Merge notes into comp data
+        notes_merged = st.session_state.sg_notes.copy() if not st.session_state.sg_notes.empty else pd.DataFrame(columns=["student_id", "note", "color"])
+        if "color" not in notes_merged.columns:
+            notes_merged["color"] = ""
+        if "test_type_override" not in notes_merged.columns:
+            notes_merged["test_type_override"] = ""
+        merge_cols = ["student_id", "note", "color", "test_type_override"]
+        # Ensure student_id types match for merge
+        notes_merged["student_id"] = pd.to_numeric(notes_merged["student_id"], errors="coerce")
+        filtered_comp["student_id"] = pd.to_numeric(filtered_comp["student_id"], errors="coerce")
+        filtered_comp = filtered_comp.merge(notes_merged[merge_cols], on="student_id", how="left")
+        filtered_comp["note"] = filtered_comp["note"].fillna("")
+        filtered_comp["color"] = filtered_comp["color"].fillna("")
+        if "test_type_override" not in filtered_comp.columns:
+            filtered_comp["test_type_override"] = ""
+        filtered_comp["test_type_override"] = filtered_comp["test_type_override"].fillna("")
 
-        # Package info
-        st.markdown("---")
-        st.markdown(f"### {selected_student}")
-        p1, p2, p3, p4 = st.columns(4)
-        p1.metric("Tutor", stu_row.get("tutor", "—") or "—")
-        p2.metric("Advisor", stu_row.get("advisor", "—") or "—")
-        st.markdown(f"**Faculty Leader:** {stu_row.get('faculty_leader', '—') or '—'}")
-        p3.metric("Package Hours", f"{stu_row['package_hours']:.0f}" if pd.notna(stu_row.get("package_hours")) else "—")
-        p4.metric("Won Date", stu_row["won_at"].strftime("%Y-%m-%d") if pd.notna(stu_row.get("won_at")) else "—")
+        # Hide students tagged as "Not Score Guarantee" or "Completed"
+        legend = st.session_state.sg_legend
+        hide_tags = set()
+        for emoji, label in legend.items():
+            if str(label).strip().lower() in ["not score guarantee", "completed", "refunded"]:
+                hide_tags.add(emoji)
 
-        p5, p6, p7, p8 = st.columns(4)
-        p5.metric("Completed Hours", f"{stu_row['completed_test_prep_hours']:.1f}" if pd.notna(stu_row.get("completed_test_prep_hours")) else "—")
-        p6.metric("Starting Score", f"{stu_row['starting_score']:.0f}" if pd.notna(stu_row.get("starting_score")) else "—")
-        p7.metric("Latest Score", f"{stu_row['latest_test_score']:.0f}" if pd.notna(stu_row.get("latest_test_score")) else "—")
-        score_ch = stu_row.get("score_change")
-        p8.metric("Score Change", f"{score_ch:+.0f}" if pd.notna(score_ch) else "—")
+        show_hidden = st.checkbox("Show hidden students (Not Score Guarantee / Completed / Refunded)", value=False, key="sg_show_hidden")
+        if not show_hidden and hide_tags:
+            filtered_comp = filtered_comp[~filtered_comp["color"].isin(hide_tags)]
 
-        # Target score info
-        test_type = stu_row.get("test_type", "—")
-        target_score = stu_row.get("target_score")
-        points_to = stu_row.get("points_to_target")
-        if pd.notna(target_score):
-            t1, t2, t3 = st.columns(3)
-            t1.metric("Test Type", test_type or "—")
-            t2.metric("Target Score", f"{target_score:.0f}")
-            if pd.notna(points_to):
-                if points_to <= 0:
-                    t3.metric("Status", f"✅ Target reached (+{abs(points_to):.0f} ahead)")
-                else:
-                    t3.metric("Status", f"❌ {points_to:.0f} points needed")
+        # Color tag filter
+        active_tags = [c for c in filtered_comp["color"].unique() if c and str(c).strip()]
+        if active_tags:
+            legend = st.session_state.sg_legend
+            tag_display = {t: f"{t} {legend[t]}" if legend.get(t) else t for t in sorted(active_tags)}
+            tag_options = list(tag_display.values())
+            tag_reverse = {v: k for k, v in tag_display.items()}
+            tag_selection = st.multiselect("Filter by Tag", tag_options, key="sg_filter_tag")
+            if tag_selection:
+                selected_raw_tags = [tag_reverse[s] for s in tag_selection]
+                filtered_comp = filtered_comp[filtered_comp["color"].isin(selected_raw_tags)]
 
-        # Compliance summary for this student
-        stu_comp = comp_df[comp_df["student_id"] == sid]
-        if len(stu_comp) > 0:
-            sc = stu_comp.iloc[0]
-            st.markdown("")
-            st.markdown("**Compliance Status:**")
+        filtered_comp = filtered_comp.reset_index(drop=True)
 
-            def check_line(label, passed, detail=""):
-                icon = "✅" if pd.notna(passed) and bool(passed) else ("❌" if pd.notna(passed) and not bool(passed) else "⚪")
-                return f"{icon} **{label}** {detail}"
+        matrix = filtered_comp[["student", "tutor", "advisor", "faculty_leader"]].copy()
+        matrix = matrix.rename(columns={"faculty_leader": "Faculty Leader"})
+        matrix["Pkg ≥20hr"] = filtered_comp.apply(
+            lambda r: f"{status_icon(r['1_pkg_20hrs'])} {r['package_hours']:.0f}hr" if pd.notna(r.get("package_hours")) else "—", axis=1
+        )
+        matrix["Hrs Used"] = filtered_comp.apply(
+            lambda r: f"{status_icon(r['2_hours_used'])} {r['completed_hours']:.1f}/20" if pd.notna(r.get("completed_hours")) else "—", axis=1
+        )
+        matrix["Pace"] = filtered_comp.apply(
+            lambda r: f"{status_icon(r['3_pace_ok'])} ({r['3_pace_val']:.1f}/wk)" if pd.notna(r.get("3_pace_val")) else status_icon(r["3_pace_ok"]), axis=1
+        )
+        matrix["Baseline"] = filtered_comp.apply(
+            lambda r: f"{status_icon(r['4_baseline'])} {r['starting_score']:.0f}" if pd.notna(r.get("starting_score")) else f"{status_icon(r['4_baseline'])}", axis=1
+        )
+        matrix["Attend"] = filtered_comp.apply(
+            lambda r: f"{status_icon(r['5_attendance'])} ({int(r['5_attended'])}/{int(r['5_total'])})" if pd.notna(r.get("5_attended")) else "—", axis=1
+        )
+        matrix["Tests"] = filtered_comp.apply(
+            lambda r: f"{status_icon(r['7_practice_tests'])} ({int(r['7_taken'])}/{int(r['7_required'])})" if pd.notna(r.get("7_taken")) else "—", axis=1
+        )
+        matrix["Gaps ≥7d"] = filtered_comp.apply(
+            lambda r: f"{status_icon(r['8_week_gaps'])} (min {int(r['8_min_gap'])}d)" if pd.notna(r.get("8_min_gap")) else status_icon(r["8_week_gaps"]), axis=1
+        )
+        matrix["Final ≤14d"] = filtered_comp.apply(
+            lambda r: f"{status_icon(r['9_final_14days'])} ({int(r['9_days_after'])}d)" if pd.notna(r.get("9_days_after")) else "—", axis=1
+        )
+        matrix["Score"] = filtered_comp.apply(
+            lambda r: f"{r['starting_score']:.0f}→{r['latest_score']:.0f} ({r['score_change']:+.0f})"
+            if pd.notna(r.get("starting_score")) and pd.notna(r.get("latest_score")) else "—", axis=1
+        )
+        matrix["Test"] = filtered_comp.apply(
+            lambda r: "SAT" if pd.notna(r.get("starting_score")) and r["starting_score"] > 100 else ("ACT" if pd.notna(r.get("starting_score")) else "—"), axis=1
+        )
+        matrix["Target"] = filtered_comp.apply(
+            lambda r: f"{r['target_score']:.0f}" if pd.notna(r.get("target_score")) else "—", axis=1
+        )
+        matrix["To Target"] = filtered_comp.apply(
+            lambda r: (
+                f"✅ +{abs(r['points_to_target']):.0f} ahead" if pd.notna(r.get("on_track")) and bool(r["on_track"])
+                else f"❌ {r['points_to_target']:.0f} needed" if pd.notna(r.get("points_to_target"))
+                else "—"
+            ), axis=1
+        )
+        matrix = matrix.rename(columns={"student": "Student", "tutor": "Tutor", "advisor": "Advisor"})
 
-            lines = []
-            lines.append(check_line("Package ≥ 20 hours", sc.get("1_pkg_20hrs"),
-                f"— {sc.get('package_hours', 0):.0f} hours" if pd.notna(sc.get("package_hours")) else ""))
-            lines.append(check_line("Used 20+ hours of test prep tutoring", sc.get("2_hours_used"),
-                f"— {sc.get('completed_hours', 0):.1f} / 20 hrs" if pd.notna(sc.get("completed_hours")) else ""))
-            lines.append(check_line("Pace 1-2 hrs/week", sc.get("3_pace_ok"),
-                f"— {sc.get('3_pace_val', 0):.1f} hrs/wk" if pd.notna(sc.get("3_pace_val")) else ""))
-            lines.append(check_line("Baseline score before first session", sc.get("4_baseline")))
-            lines.append(check_line("100% session attendance", sc.get("5_attendance"),
-                f"— {int(sc.get('5_attended', 0))}/{int(sc.get('5_total', 0))} attended" if pd.notna(sc.get("5_attended")) else ""))
-            lines.append("⚪ **Homework completion** — not yet tracked")
-            lines.append(check_line("Minimum 4 practice tests", sc.get("7_practice_tests"),
-                f"— {int(sc.get('7_taken', 0))}/{int(sc.get('7_required', 0))} taken" if pd.notna(sc.get("7_taken")) else ""))
-            lines.append(check_line("≥ 1 week between practice tests", sc.get("8_week_gaps"),
-                f"— min gap {int(sc.get('8_min_gap'))} days" if pd.notna(sc.get("8_min_gap")) else ""))
-            lines.append(check_line("Official exam within 14 days of last session", sc.get("9_final_14days"),
-                f"— {int(sc.get('9_days_after'))} days after last session" if pd.notna(sc.get("9_days_after")) else "— no official exam taken yet"))
+        # Color tag and notes — always last
+        color_options = ["", "🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "⚫", "🟤"]
+        matrix["Sess Gap"] = filtered_comp.apply(
+            lambda r: f"⚠️ {int(r['max_session_gap'])}d" if pd.notna(r.get("session_gap")) and bool(r.get("session_gap")) else (
+                f"✅ {int(r['max_session_gap'])}d" if pd.notna(r.get("max_session_gap")) else "—"
+            ), axis=1
+        )
+        matrix["Tag"] = filtered_comp["color"]
+        matrix["Notes"] = filtered_comp["note"]
 
-            for line in lines:
-                st.markdown(line)
+        # Editable notes in table
+        disabled_cols = [c for c in matrix.columns if c not in ["Notes", "Tag"]]
+        # Reorder: Tag first, Notes last
+        col_order = ["Tag"] + [c for c in matrix.columns if c not in ["Tag", "Notes"]] + ["Notes"]
+        matrix = matrix[col_order]
 
-        # Sessions table
-        st.markdown("")
-        st.markdown("**Sessions:**")
-        if not df_sg_sessions.empty and sid in df_sg_sessions["student_id"].values:
-            stu_sess = df_sg_sessions[df_sg_sessions["student_id"] == sid].copy()
-            stu_sess["starts_at"] = pd.to_datetime(stu_sess["starts_at"], errors="coerce")
-            stu_sess = stu_sess.sort_values("starts_at")
-            sess_cols = ["starts_at", "session_hours", "attended", "tutor"]
-            if "subjects_covered" in stu_sess.columns:
-                sess_cols.append("subjects_covered")
-            if "session_notes" in stu_sess.columns:
-                sess_cols.append("session_notes")
-            sess_display = stu_sess[sess_cols].copy()
-            sess_display["starts_at"] = sess_display["starts_at"].dt.strftime("%Y-%m-%d %I:%M %p")
-            now_str = pd.Timestamp.now().strftime("%Y-%m-%d %I:%M %p")
-            def format_attended(row):
-                try:
-                    sess_time = pd.to_datetime(row["starts_at"])
-                    if sess_time > pd.Timestamp.now():
-                        return "⏳"
-                except:
-                    pass
-                return "✅" if row["attended"] == 1 else "❌"
-            sess_display["attended"] = sess_display.apply(format_attended, axis=1)
-            sess_display["session_hours"] = sess_display["session_hours"].round(2)
-            rename_map = {
-                "starts_at": "Date", "session_hours": "Hours",
-                "attended": "Attended", "tutor": "Tutor",
-                "subjects_covered": "Subjects", "session_notes": "Notes",
-            }
-            sess_display = sess_display.rename(columns={k: v for k, v in rename_map.items() if k in sess_display.columns})
-            if "Subjects" in sess_display.columns:
-                sess_display["Subjects"] = sess_display["Subjects"].fillna("—")
-            if "Notes" in sess_display.columns:
-                sess_display["Notes"] = sess_display["Notes"].fillna("")
-            st.dataframe(sess_display, hide_index=True, use_container_width=True)
+        col_config = {
+            "Student": st.column_config.TextColumn("Student", width=140),
+            "Tutor": st.column_config.TextColumn("Tutor", width=140),
+            "Advisor": st.column_config.TextColumn("Advisor", width=130),
+            "Pkg ≥20hr": st.column_config.TextColumn("Pkg ≥20hr", width=90),
+            "Hrs Used": st.column_config.TextColumn("Hrs Used", width=100),
+            "Pace": st.column_config.TextColumn("Pace", width=110),
+            "Baseline": st.column_config.TextColumn("Baseline", width=85),
+            "Attend": st.column_config.TextColumn("Attend", width=90),
+            "Tests": st.column_config.TextColumn("Tests", width=75),
+            "Gaps ≥7d": st.column_config.TextColumn("Gaps ≥7d", width=90),
+            "Final ≤14d": st.column_config.TextColumn("Final ≤14d", width=70),
+            "Score": st.column_config.TextColumn("Score", width=130),
+            "Test": st.column_config.TextColumn("Test", width=50),
+            "Target": st.column_config.TextColumn("Target", width=60),
+            "To Target": st.column_config.TextColumn("To Target", width=130),
+            "Tag": st.column_config.SelectboxColumn(
+                    "Tag",
+                    options=["", "🔴", "🟠", "🟡", "🟢", "🔵", "🟣"],
+                    width=60,
+                ),
+                "Notes": st.column_config.TextColumn("Notes", width="large"),
+        }
+        # Color map for row shading
+        color_bg_map = {
+            "🔴": "rgba(239,68,68,0.12)",
+            "🟠": "rgba(249,115,22,0.12)",
+            "🟡": "rgba(234,179,8,0.12)",
+            "🟢": "rgba(34,197,94,0.12)",
+            "🔵": "rgba(59,130,246,0.12)",
+            "🟣": "rgba(168,85,247,0.12)",
+                "⚫": "rgba(0,0,0,0.08)",
+                "🟤": "rgba(180,83,9,0.12)",
+        }
 
-            st.markdown(f"**Total sessions:** {len(stu_sess)} | "
-                        f"**Total hours:** {stu_sess['session_hours'].sum():.1f} | "
-                        f"**Attended:** {int(stu_sess['attended'].sum())}/{len(stu_sess)}")
-        else:
-            st.info("No session data available for this student.")
+        def shade_rows(row):
+            tag = row.get("Tag", "")
+            bg = color_bg_map.get(str(tag).strip(), "")
+            if bg:
+                return [f"background-color: {bg}"] * len(row)
+            return [""] * len(row)
 
-        # Notes
-        st.markdown("")
-        st.markdown("**Notes:**")
-        existing_note = ""
-        notes_df = st.session_state.sg_notes
-        if not notes_df.empty and sid in notes_df["student_id"].values:
-            existing_note = notes_df[notes_df["student_id"] == sid]["note"].iloc[0]
-            if pd.isna(existing_note):
-                existing_note = ""
-            last_updated = notes_df[notes_df["student_id"] == sid]["updated_at"].iloc[0]
-            if pd.notna(last_updated):
-                st.markdown(f"<p style='color:#94a3b8; font-size:0.75rem;'>Last updated: {last_updated}</p>", unsafe_allow_html=True)
+        styled = matrix.style.apply(shade_rows, axis=1)
+        st.dataframe(
+            styled,
+            hide_index=True,
+            use_container_width=True,
+            height=min(700, len(matrix) * 38 + 60),
+            column_config={
+                "Tag": st.column_config.TextColumn("Tag", width=50),
+                "Student": st.column_config.TextColumn("Student", width=140),
+                "Tutor": st.column_config.TextColumn("Tutor", width=150),
+                "Advisor": st.column_config.TextColumn("Advisor", width=130),
+                "Faculty Leader": st.column_config.TextColumn("Faculty Leader", width=140),
+                "Pkg ≥20hr": st.column_config.TextColumn("Pkg ≥20hr", width=95),
+                "Hrs Used": st.column_config.TextColumn("Hrs Used", width=105),
+                "Pace": st.column_config.TextColumn("Pace", width=120),
+                "Baseline": st.column_config.TextColumn("Baseline", width=90),
+                "Attend": st.column_config.TextColumn("Attend", width=95),
+                "Tests": st.column_config.TextColumn("Tests", width=80),
+                "Gaps ≥7d": st.column_config.TextColumn("Gaps ≥7d", width=95),
+                "Final ≤14d": st.column_config.TextColumn("Final ≤14d", width=75),
+                "Score": st.column_config.TextColumn("Score", width=140),
+                "Test": st.column_config.TextColumn("Test", width=55),
+                "Target": st.column_config.TextColumn("Target", width=65),
+                "To Target": st.column_config.TextColumn("To Target", width=140),
+                "Notes": st.column_config.TextColumn("Notes", width="large"),
+            },
+        )
 
-        note_input = st.text_area("Add or edit notes for this student (use new lines for each entry):", value=existing_note, height=150, key=f"note_{sid}")
+        # Download options
+        dl1, dl2 = st.columns(2)
+        with dl1:
+            csv_data = matrix.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "📥 Download as CSV",
+                data=csv_data,
+                file_name=f"score_guarantee_checklist_{date.today().isoformat()}.csv",
+                mime="text/csv",
+                key="sg_csv_download",
+            )
+        with dl2:
+            # Build a clean Excel export
+            import io as _io
+            excel_buffer = _io.BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
+                matrix.to_excel(writer, index=False, sheet_name="Checklist")
+                # Auto-size columns
+                ws = writer.sheets["Checklist"]
+                for col_idx, col_name in enumerate(matrix.columns, 1):
+                    max_len = max(
+                        len(str(col_name)),
+                        matrix[col_name].astype(str).str.len().max() if len(matrix) > 0 else 0
+                    )
+                    ws.column_dimensions[ws.cell(row=1, column=col_idx).column_letter].width = min(max_len + 3, 40)
+            excel_buffer.seek(0)
+            st.download_button(
+                "📥 Download as Excel",
+                data=excel_buffer,
+                file_name=f"score_guarantee_checklist_{date.today().isoformat()}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key="sg_xlsx_download",
+            )
 
-        if st.button("💾 Save Note", key=f"save_note_{sid}"):
-            now_str = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")
+        # Editable tag and notes in expander
+        with st.expander("✏️ Edit Tags, Test Type & Notes", expanded=False):
+            legend = st.session_state.sg_legend
+            tag_emojis = ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "⚫", "🟤"]
+            tag_to_labeled = {"": "— None —"}
+            for e in tag_emojis:
+                tag_to_labeled[e] = f"{e} {legend[e]}" if legend.get(e) else e
+            labeled_to_tag = {v: k for k, v in tag_to_labeled.items()}
+            labeled_options = list(tag_to_labeled.values())
+
+            eq_students = sorted(sg["student"].dropna().unique())
+            default_idx = 0
+            if "sg_active_student" in st.session_state and st.session_state["sg_active_student"] in eq_students:
+                default_idx = eq_students.index(st.session_state["sg_active_student"])
+            eq_selected = st.selectbox("Select student:", eq_students, index=default_idx, key="eq_student_select")
+
+            if eq_selected:
+                eq_row = sg[sg["student"] == eq_selected].iloc[0]
+                eq_sid = eq_row["student_id"]
+                sid_str = str(eq_sid).split(".")[0]
+
+                # Load existing values
+                eq_existing_note = ""
+                eq_existing_color = ""
+                eq_existing_test = ""
+                eq_updated = ""
+                eq_notes_df = st.session_state.sg_notes
+                if not eq_notes_df.empty:
+                    mask = eq_notes_df["student_id"].astype(str).str.split(".").str[0] == sid_str
+                    if mask.any():
+                        row_data = eq_notes_df.loc[mask].iloc[0]
+                        eq_existing_note = str(row_data.get("note", ""))
+                        if eq_existing_note == "nan":
+                            eq_existing_note = ""
+                        eq_existing_color = str(row_data.get("color", ""))
+                        if eq_existing_color == "nan":
+                            eq_existing_color = ""
+                        eq_existing_test = str(row_data.get("test_type_override", ""))
+                        if eq_existing_test == "nan":
+                            eq_existing_test = ""
+                        eq_updated = str(row_data.get("updated_at", ""))
+                        if eq_updated == "nan":
+                            eq_updated = ""
+
+                # Show current student info
+                st.markdown(f"**Tutor:** {eq_row.get('tutor', '—')} | **Advisor:** {eq_row.get('advisor', '—')} | **FL:** {eq_row.get('faculty_leader', '—')}")
+                if eq_updated:
+                    st.markdown(f"<p style='color:#94a3b8; font-size:0.75rem;'>Last updated: {eq_updated}</p>", unsafe_allow_html=True)
+
+                ec1, ec2 = st.columns(2)
+                with ec1:
+                    current_tag_label = tag_to_labeled.get(eq_existing_color, "— None —")
+                    tag_idx = labeled_options.index(current_tag_label) if current_tag_label in labeled_options else 0
+                    eq_tag = st.selectbox("Tag:", labeled_options, index=tag_idx, key=f"eq_tag_{sid_str}")
+                with ec2:
+                    test_options = ["Auto", "SAT", "ACT"]
+                    current_test = eq_existing_test if eq_existing_test in ["SAT", "ACT"] else "Auto"
+                    eq_test = st.selectbox("Test Type:", test_options, index=test_options.index(current_test), key=f"eq_test_{sid_str}")
+
+                eq_note = st.text_area("Notes:", value=eq_existing_note, height=150, key=f"eq_note_{eq_sid}")
+
+                if st.button("💾 Save Changes", key=f"eq_save_{eq_sid}", use_container_width=True):
+                    now_str = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")
+                    save_color = labeled_to_tag.get(eq_tag, "")
+                    save_test = "" if eq_test == "Auto" else eq_test
+
+                    save_notes = st.session_state.sg_notes.copy()
+                    for col in ["note", "color", "updated_at"]:
+                        if col in save_notes.columns:
+                            save_notes[col] = save_notes[col].astype(str).replace("nan", "")
+                    if "test_type_override" not in save_notes.columns:
+                        save_notes["test_type_override"] = ""
+                    save_notes["test_type_override"] = save_notes["test_type_override"].astype(str).replace("nan", "")
+                    save_notes["student_id"] = save_notes["student_id"].astype(str)
+
+                    m = save_notes["student_id"].str.split(".").str[0] == sid_str
+                    if m.any():
+                        save_notes.loc[m, "note"] = eq_note
+                        save_notes.loc[m, "color"] = save_color
+                        save_notes.loc[m, "test_type_override"] = save_test
+                        save_notes.loc[m, "updated_at"] = now_str
+                    else:
+                        new_r = pd.DataFrame([{"student_id": sid_str, "note": eq_note, "color": save_color, "test_type_override": save_test, "updated_at": now_str}])
+                        save_notes = pd.concat([save_notes, new_r], ignore_index=True)
+
+                    if save_sg_notes(save_notes):
+                        st.session_state.sg_notes = save_notes
+                        st.rerun()
+
+            # Set edited_matrix to None so the old change detection doesn't run
+            edited_matrix = None
+
+                # ── Color Legend ───────────────────────────────────────────────────
+        legend = st.session_state.sg_legend
+        with st.expander("🎨 Color Legend — click to edit", expanded=False):
+            st.markdown("<p style='color:#64748b; font-size:0.82rem;'>Define what each color tag means:</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color:#94a3b8; font-size:0.75rem; font-style:italic;'>💡 Students tagged with labels named exactly \"Not Score Guarantee\", \"Completed\", or \"Refunded\" will be automatically hidden from all tables and alerts. Use the checkbox above the table to show them again.</p>", unsafe_allow_html=True)
+            legend_colors = ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "⚫", "🟤"]
+            new_legend = {}
+            lc1, lc2 = st.columns(2)
+            for idx, color in enumerate(legend_colors):
+                col = lc1 if idx < 4 else lc2
+                with col:
+                    label = st.text_input(
+                        f"{color}",
+                        value=legend.get(color, ""),
+                        key=f"legend_{color}",
+                        placeholder="Enter label...",
+                    )
+                    new_legend[color] = label
+
+            if st.button("💾 Save Legend", key="save_legend"):
+                if save_sg_legend(new_legend):
+                    st.session_state.sg_legend = new_legend
+                    st.rerun()
+
+        # Show active legend inline
+        active_legend = {k: v for k, v in st.session_state.sg_legend.items() if v}
+        if active_legend:
+            legend_str = " &nbsp;&nbsp;|&nbsp;&nbsp; ".join(
+                [f"{k} {v}" for k, v in active_legend.items()]
+            )
+            st.markdown(
+                f"<p style='font-size:0.78rem; color:#64748b; margin-bottom:8px;'>{legend_str}</p>",
+                unsafe_allow_html=True,
+            )
+
+        # Detect and save note/tag changes from expander
+        if edited_matrix is not None and False:  # disabled — handled in expander
+            changed = False
             notes_df = st.session_state.sg_notes.copy()
+            if "color" not in notes_df.columns:
+                notes_df["color"] = ""
+            # Ensure all columns are string type to avoid dtype errors
             for col in ["note", "color", "updated_at"]:
                 if col in notes_df.columns:
                     notes_df[col] = notes_df[col].astype(str).replace("nan", "")
             notes_df["student_id"] = notes_df["student_id"].astype(str)
-            sid_str = str(sid)
-            mask = notes_df["student_id"] == sid_str
-            if mask.any():
-                notes_df.loc[mask, "note"] = note_input
-                notes_df.loc[mask, "updated_at"] = now_str
-            else:
-                new_row = pd.DataFrame([{"student_id": sid_str, "note": note_input, "updated_at": now_str}])
-                notes_df = pd.concat([notes_df, new_row], ignore_index=True)
-            if save_sg_notes(notes_df):
-                st.session_state.sg_notes = notes_df
-                st.rerun()
-            else:
-                st.error("Failed to save note. Check GitHub credentials.")
 
+            if "test_type_override" not in notes_df.columns:
+                notes_df["test_type_override"] = ""
+            for col in ["test_type_override"]:
+                if col in notes_df.columns:
+                    notes_df[col] = notes_df[col].astype(str).replace("nan", "")
 
-        # Homework / Parent Updates
-        st.markdown("")
-        st.markdown("**Parent Updates & Homework:**")
-        if not df_progress.empty:
-            student_name = stu_row.get("student", "")
-            stu_updates = df_progress[df_progress["student_name"].fillna("").str.strip() == student_name.strip()].copy()
-            stu_course = stu_row.get("course_id")
-            if len(stu_updates) == 0 and pd.notna(stu_course):
-                stu_updates = df_progress[df_progress["course_id"] == stu_course].copy()
+            for i in range(len(edited_matrix)):
+                new_note = str(edited_matrix.iloc[i].get("Notes", "") or "")
+                new_color_raw = str(edited_matrix.iloc[i].get("Tag", "") or "")
+                new_color = new_color_raw.split(" ")[0].strip() if new_color_raw else ""
+                new_test_type = str(edited_matrix.iloc[i].get("Test Type", "") or "")
+                if new_test_type == "Auto":
+                    new_test_type = ""
+                old_note = str(filtered_comp.iloc[i].get("note", "") or "")
+                old_color = str(filtered_comp.iloc[i].get("color", "") or "")
+                old_test_type = str(filtered_comp.iloc[i].get("test_type_override", "") or "")
 
-            if len(stu_updates) > 0:
-                stu_updates = stu_updates.sort_values("sent_at", ascending=False)
-
-                hw_keywords = ["homework", "hw", "assignment", "assigned", "practice test",
-                               "practice exam", "worksheet", "workbook", "practice problem",
-                               "practice section", "bluebook", "khan academy", "khan",
-                               "practice at home", "work at home", "independent practice"]
-                completion_positive = ["completed", "finished", "did the", "did his", "did her",
-                                       "turned in", "submitted", "done with", "worked on",
-                                       "completed all", "great job on", "nice work on"]
-                completion_negative = ["did not complete", "didn't complete", "hasn't completed",
-                                       "has not completed", "didn't do", "did not do",
-                                       "hasn't done", "has not done", "forgot", "missing",
-                                       "incomplete", "not completed", "didn't finish",
-                                       "did not finish", "hasn't finished", "skipped"]
-
-                # Smarter homework detection — sentence-level analysis
-                def analyze_homework(body_text, hw_kws, pos_kws, neg_kws):
-                    """Analyze body at sentence level for homework context."""
-                    if not body_text or body_text == "nan":
-                        return False, None, []
-                    lower = body_text.lower()
-                    import re as _re
-                    sentences = _re.split(r'[.!?\n]+', lower)
-
-                    # Assignment context words — keyword must appear near these
-                    assign_context = ["assign", "this week", "next week", "weekend",
-                                      "before our", "complete", "work on", "practice",
-                                      "please", "should", "need to", "will be", "includes",
-                                      "i want you", "i'd like you", "try to", "make sure"]
-
-                    hw_sentences = []
-                    has_hw = False
-                    completed = None
-
-                    for sent in sentences:
-                        sent = sent.strip()
-                        if not sent:
-                            continue
-
-                        # Check for core homework keywords (not "practice exam" alone)
-                        core_hw = ["homework", "hw ", "home work", "assignment",
-                                   "worksheet", "workbook", "independent practice",
-                                   "practice at home", "work at home"]
-                        # Contextual keywords — only count if in assignment context
-                        contextual_hw = ["practice test", "practice exam", "bluebook",
-                                         "khan academy", "khan", "practice section",
-                                         "practice problems"]
-
-                        has_core = any(kw in sent for kw in core_hw)
-                        has_contextual = any(kw in sent for kw in contextual_hw)
-                        has_context = any(ctx in sent for ctx in assign_context)
-
-                        if has_core or (has_contextual and has_context):
-                            has_hw = True
-                            # Check completion in this sentence
-                            has_neg = any(kw in sent for kw in neg_kws)
-                            has_pos = any(kw in sent for kw in pos_kws)
-                            # Also check for praise patterns indicating completion
-                            praise = any(p in sent for p in [
-                                "great job", "incredible job", "nice work",
-                                "well done", "excellent", "good job",
-                                "did a great", "did an amazing", "did an incredible",
-                                "did a wonderful", "did a fantastic",
-                                "all of the", "all the", "every"])
-                            if has_neg:
-                                completed = "not_completed"
-                            elif has_pos or (praise and has_core):
-                                if completed != "not_completed":
-                                    completed = "completed"
-                            elif completed is None:
-                                completed = "assigned"
-                            hw_sentences.append(sent)
-
-                    return has_hw, completed, hw_sentences
-
-                hw_results = []
-                for _, upd in stu_updates.iterrows():
-                    body_raw = str(upd.get("body", ""))
-                    date_val = upd["sent_at"].strftime("%Y-%m-%d") if pd.notna(upd.get("sent_at")) else "—"
-                    tutor_val = upd.get("tutor", "—")
-                    msg_type = upd.get("message_type", "—")
-
-                    hw_found, hw_status, hw_sents = analyze_homework(
-                        body_raw, hw_keywords, completion_positive, completion_negative
-                    )
-
-                    if hw_found:
-                        if hw_status == "not_completed":
-                            status_str = "❌ Not completed"
-                        elif hw_status == "completed":
-                            status_str = "✅ Completed"
-                        else:
-                            status_str = "📝 Assigned (no status)"
+                if new_note != old_note or new_color != old_color or new_test_type != old_test_type:
+                    sid = str(student_ids_ordered[i])
+                    now_str = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")
+                    mask = notes_df["student_id"] == sid
+                    if mask.any():
+                        notes_df.loc[mask, "note"] = new_note
+                        notes_df.loc[mask, "color"] = new_color
+                        notes_df.loc[mask, "test_type_override"] = new_test_type
+                        notes_df.loc[mask, "updated_at"] = now_str
                     else:
-                        status_str = "—"
+                        new_row = pd.DataFrame([{"student_id": sid, "note": new_note, "color": new_color, "test_type_override": new_test_type, "updated_at": now_str}])
+                        notes_df = pd.concat([notes_df, new_row], ignore_index=True)
+                    changed = True
+            if changed:
+                if save_sg_notes(notes_df):
+                    st.session_state.sg_notes = notes_df
+                    st.rerun()
 
-                    hw_results.append({
-                        "Date": date_val,
-                        "Type": msg_type,
-                        "Tutor": tutor_val,
-                        "HW Mentioned": "✅" if hw_found else "❌",
-                        "Status": status_str,
-                    })
+        st.markdown("<div id='student-detail-anchor'></div>", unsafe_allow_html=True)
+        # ── Student Detail Drilldown ──────────────────────────────────────
+        st.markdown("")
+        st.markdown(
+            "<p class='section-label'>Drilldown</p>"
+            "<p class='section-title'>Student Detail</p>",
+            unsafe_allow_html=True,
+        )
 
-                hw_df = pd.DataFrame(hw_results)
+        student_names = sorted(sg["student"].dropna().unique())
+        detail_default_idx = 0
+        if "sg_active_student" in st.session_state and st.session_state["sg_active_student"] in student_names:
+            detail_default_idx = student_names.index(st.session_state["sg_active_student"])
+        selected_student = st.selectbox("Select a student:", student_names, index=detail_default_idx, key="sg_student_select")
 
-                total_updates = len(hw_df)
-                hw_mentioned_count = len(hw_df[hw_df["HW Mentioned"] == "✅"])
-                hw_completed_count = len(hw_df[hw_df["Status"].str.contains("Completed", na=False) & ~hw_df["Status"].str.contains("Not completed", na=False)])
-                hw_not_completed_count = len(hw_df[hw_df["Status"].str.contains("Not completed", na=False)])
+        if selected_student:
+            stu_row = sg[sg["student"] == selected_student].iloc[0]
+            sid = stu_row["student_id"]
 
-                hm1, hm2, hm3, hm4 = st.columns(4)
-                hm1.metric("Total Updates", total_updates)
-                hm2.metric("HW Mentioned", f"{hw_mentioned_count}/{total_updates}")
-                hm3.metric("HW Completed", hw_completed_count)
-                hm4.metric("HW Not Completed", hw_not_completed_count)
+            # Package info
+            st.markdown("---")
+            st.markdown(f"### {selected_student}")
+            p1, p2, p3, p4 = st.columns(4)
+            p1.metric("Tutor", stu_row.get("tutor", "—") or "—")
+            p2.metric("Advisor", stu_row.get("advisor", "—") or "—")
+            st.markdown(f"**Faculty Leader:** {stu_row.get('faculty_leader', '—') or '—'}")
+            p3.metric("Package Hours", f"{stu_row['package_hours']:.0f}" if pd.notna(stu_row.get("package_hours")) else "—")
+            p4.metric("Won Date", stu_row["won_at"].strftime("%Y-%m-%d") if pd.notna(stu_row.get("won_at")) else "—")
 
-                import html as _html
+            p5, p6, p7, p8 = st.columns(4)
+            p5.metric("Completed Hours", f"{stu_row['completed_test_prep_hours']:.1f}" if pd.notna(stu_row.get("completed_test_prep_hours")) else "—")
+            p6.metric("Starting Score", f"{stu_row['starting_score']:.0f}" if pd.notna(stu_row.get("starting_score")) else "—")
+            p7.metric("Latest Score", f"{stu_row['latest_test_score']:.0f}" if pd.notna(stu_row.get("latest_test_score")) else "—")
+            score_ch = stu_row.get("score_change")
+            p8.metric("Score Change", f"{score_ch:+.0f}" if pd.notna(score_ch) else "—")
 
-                def highlight_body(body_text, hw_kws, pos_kws, neg_kws):
-                    if not body_text or body_text == "nan":
-                        return ""
-                    text = str(body_text)
-                    lower = text.lower()
+            # Target score info
+            test_type = stu_row.get("test_type", "—")
+            target_score = stu_row.get("target_score")
+            points_to = stu_row.get("points_to_target")
+            if pd.notna(target_score):
+                t1, t2, t3 = st.columns(3)
+                t1.metric("Test Type", test_type or "—")
+                t2.metric("Target Score", f"{target_score:.0f}")
+                if pd.notna(points_to):
+                    if points_to <= 0:
+                        t3.metric("Status", f"✅ Target reached (+{abs(points_to):.0f} ahead)")
+                    else:
+                        t3.metric("Status", f"❌ {points_to:.0f} points needed")
 
-                    core_hw = ["homework", "home work", "assignment", "worksheet",
-                               "workbook", "independent practice", "practice at home"]
-                    contextual_hw = ["practice test", "practice exam", "bluebook",
-                                     "khan academy", "practice section", "practice problems"]
-                    assign_ctx = ["assign", "this week", "next week", "weekend",
-                                  "before our", "complete", "work on", "please",
-                                  "should", "need to", "will be", "includes"]
-                    praise = ["great job", "incredible job", "nice work", "well done",
-                              "excellent work", "good job", "did a great", "did an amazing",
-                              "did an incredible", "did a wonderful", "did a fantastic"]
-                    all_neg = ["did not complete", "didn\'t complete", "hasn\'t completed",
-                               "has not completed", "didn\'t do", "did not do",
-                               "hasn\'t done", "has not done", "forgot", "missing",
-                               "incomplete", "not completed", "didn\'t finish",
-                               "did not finish", "hasn\'t finished", "skipped"]
-                    all_pos = ["completed", "finished", "did the", "did his", "did her",
-                               "turned in", "submitted", "done with", "worked on",
-                               "completed all"] + praise
+            # Compliance summary for this student
+            stu_comp = comp_df[comp_df["student_id"] == sid]
+            if len(stu_comp) > 0:
+                sc = stu_comp.iloc[0]
+                st.markdown("")
+                st.markdown("**Compliance Status:**")
 
-                    # Collect (start, end, color) — no overlaps
-                    marks = []
-                    used = set()
+                def check_line(label, passed, detail=""):
+                    icon = "✅" if pd.notna(passed) and bool(passed) else ("❌" if pd.notna(passed) and not bool(passed) else "⚪")
+                    return f"{icon} **{label}** {detail}"
 
-                    def add_mark(s, e, c):
-                        for pos in range(s, e):
-                            if pos in used:
-                                return
-                        marks.append((s, e, c))
-                        for pos in range(s, e):
-                            used.add(pos)
+                lines = []
+                lines.append(check_line("Package ≥ 20 hours", sc.get("1_pkg_20hrs"),
+                    f"— {sc.get('package_hours', 0):.0f} hours" if pd.notna(sc.get("package_hours")) else ""))
+                lines.append(check_line("Used 20+ hours of test prep tutoring", sc.get("2_hours_used"),
+                    f"— {sc.get('completed_hours', 0):.1f} / 20 hrs" if pd.notna(sc.get("completed_hours")) else ""))
+                lines.append(check_line("Pace 1-2 hrs/week", sc.get("3_pace_ok"),
+                    f"— {sc.get('3_pace_val', 0):.1f} hrs/wk" if pd.notna(sc.get("3_pace_val")) else ""))
+                lines.append(check_line("Baseline score before first session", sc.get("4_baseline")))
+                lines.append(check_line("100% session attendance", sc.get("5_attendance"),
+                    f"— {int(sc.get('5_attended', 0))}/{int(sc.get('5_total', 0))} attended" if pd.notna(sc.get("5_attended")) else ""))
+                lines.append("⚪ **Homework completion** — not yet tracked")
+                lines.append(check_line("Minimum 4 practice tests", sc.get("7_practice_tests"),
+                    f"— {int(sc.get('7_taken', 0))}/{int(sc.get('7_required', 0))} taken" if pd.notna(sc.get("7_taken")) else ""))
+                lines.append(check_line("≥ 1 week between practice tests", sc.get("8_week_gaps"),
+                    f"— min gap {int(sc.get('8_min_gap'))} days" if pd.notna(sc.get("8_min_gap")) else ""))
+                lines.append(check_line("Official exam within 14 days of last session", sc.get("9_final_14days"),
+                    f"— {int(sc.get('9_days_after'))} days after last session" if pd.notna(sc.get("9_days_after")) else "— no official exam taken yet"))
 
-                    # Red first
-                    for kw in all_neg:
-                        i = 0
-                        while True:
-                            i = lower.find(kw, i)
-                            if i == -1: break
-                            add_mark(i, i + len(kw), "r")
-                            i += len(kw)
+                for line in lines:
+                    st.markdown(line)
 
-                    # Green — only near core hw
-                    core_locs = []
-                    for kw in core_hw:
-                        i = 0
-                        while True:
-                            i = lower.find(kw, i)
-                            if i == -1: break
-                            core_locs.append(i)
-                            i += len(kw)
+            # Sessions table
+            st.markdown("")
+            st.markdown("**Sessions:**")
+            if not df_sg_sessions.empty and sid in df_sg_sessions["student_id"].values:
+                stu_sess = df_sg_sessions[df_sg_sessions["student_id"] == sid].copy()
+                stu_sess["starts_at"] = pd.to_datetime(stu_sess["starts_at"], errors="coerce")
+                stu_sess = stu_sess.sort_values("starts_at")
+                sess_cols = ["starts_at", "session_hours", "attended", "tutor"]
+                if "subjects_covered" in stu_sess.columns:
+                    sess_cols.append("subjects_covered")
+                if "session_notes" in stu_sess.columns:
+                    sess_cols.append("session_notes")
+                sess_display = stu_sess[sess_cols].copy()
+                sess_display["starts_at"] = sess_display["starts_at"].dt.strftime("%Y-%m-%d %I:%M %p")
+                now_str = pd.Timestamp.now().strftime("%Y-%m-%d %I:%M %p")
+                def format_attended(row):
+                    try:
+                        sess_time = pd.to_datetime(row["starts_at"])
+                        if sess_time > pd.Timestamp.now():
+                            return "⏳"
+                    except:
+                        pass
+                    return "✅" if row["attended"] == 1 else "❌"
+                sess_display["attended"] = sess_display.apply(format_attended, axis=1)
+                sess_display["session_hours"] = sess_display["session_hours"].round(2)
+                rename_map = {
+                    "starts_at": "Date", "session_hours": "Hours",
+                    "attended": "Attended", "tutor": "Tutor",
+                    "subjects_covered": "Subjects", "session_notes": "Notes",
+                }
+                sess_display = sess_display.rename(columns={k: v for k, v in rename_map.items() if k in sess_display.columns})
+                if "Subjects" in sess_display.columns:
+                    sess_display["Subjects"] = sess_display["Subjects"].fillna("—")
+                if "Notes" in sess_display.columns:
+                    sess_display["Notes"] = sess_display["Notes"].fillna("")
+                st.dataframe(sess_display, hide_index=True, use_container_width=True)
 
-                    for kw in all_pos:
-                        i = 0
-                        while True:
-                            i = lower.find(kw, i)
-                            if i == -1: break
-                            if any(abs(i - cp) < 200 for cp in core_locs):
-                                add_mark(i, i + len(kw), "g")
-                            i += len(kw)
+                st.markdown(f"**Total sessions:** {len(stu_sess)} | "
+                            f"**Total hours:** {stu_sess['session_hours'].sum():.1f} | "
+                            f"**Attended:** {int(stu_sess['attended'].sum())}/{len(stu_sess)}")
+            else:
+                st.info("No session data available for this student.")
 
-                    # Yellow — core always
-                    for kw in core_hw:
-                        i = 0
-                        while True:
-                            i = lower.find(kw, i)
-                            if i == -1: break
-                            add_mark(i, i + len(kw), "y")
-                            i += len(kw)
+            # Notes
+            st.markdown("")
+            st.markdown("**Notes:**")
+            existing_note = ""
+            notes_df = st.session_state.sg_notes
+            if not notes_df.empty and sid in notes_df["student_id"].values:
+                existing_note = notes_df[notes_df["student_id"] == sid]["note"].iloc[0]
+                if pd.isna(existing_note):
+                    existing_note = ""
+                last_updated = notes_df[notes_df["student_id"] == sid]["updated_at"].iloc[0]
+                if pd.notna(last_updated):
+                    st.markdown(f"<p style='color:#94a3b8; font-size:0.75rem;'>Last updated: {last_updated}</p>", unsafe_allow_html=True)
 
-                    # Yellow — contextual only near assign context
-                    for kw in contextual_hw:
-                        i = 0
-                        while True:
-                            i = lower.find(kw, i)
-                            if i == -1: break
-                            window = lower[max(0,i-200):i+len(kw)+200]
-                            if any(ctx in window for ctx in assign_ctx):
-                                add_mark(i, i + len(kw), "y")
-                            i += len(kw)
+            note_input = st.text_area("Add or edit notes for this student (use new lines for each entry):", value=existing_note, height=150, key=f"note_{sid}")
 
-                    if not marks:
-                        return text.replace("\n", "<br>")
+            if st.button("💾 Save Note", key=f"save_note_{sid}"):
+                now_str = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")
+                notes_df = st.session_state.sg_notes.copy()
+                for col in ["note", "color", "updated_at"]:
+                    if col in notes_df.columns:
+                        notes_df[col] = notes_df[col].astype(str).replace("nan", "")
+                notes_df["student_id"] = notes_df["student_id"].astype(str)
+                sid_str = str(sid)
+                mask = notes_df["student_id"] == sid_str
+                if mask.any():
+                    notes_df.loc[mask, "note"] = note_input
+                    notes_df.loc[mask, "updated_at"] = now_str
+                else:
+                    new_row = pd.DataFrame([{"student_id": sid_str, "note": note_input, "updated_at": now_str}])
+                    notes_df = pd.concat([notes_df, new_row], ignore_index=True)
+                if save_sg_notes(notes_df):
+                    st.session_state.sg_notes = notes_df
+                    st.rerun()
+                else:
+                    st.error("Failed to save note. Check GitHub credentials.")
 
-                    # Build output by walking through text
-                    styles = {
-                        "r": "background-color:#fecaca;color:#991b1b;padding:1px 3px;border-radius:3px;font-weight:600",
-                        "g": "background-color:#dcfce7;color:#166534;padding:1px 3px;border-radius:3px;font-weight:600",
-                        "y": "background-color:#fef9c3;color:#854d0e;padding:1px 3px;border-radius:3px;font-weight:600",
-                    }
-                    marks.sort(key=lambda x: x[0])
-                    parts = []
-                    pos = 0
-                    for s, e, c in marks:
-                        if s > pos:
-                            parts.append(text[pos:s])
-                        sty = styles[c]
-                        parts.append('<span style="' + sty + '">' + text[s:e] + '</span>')
-                        pos = e
-                    if pos < len(text):
-                        parts.append(text[pos:])
-                    result = "".join(parts)
-                    return result.replace("\n", "<br>")
 
-                # Render updates in expander
-                with st.expander(f"📄 View All Updates ({len(stu_updates)})", expanded=False):
+            # Homework / Parent Updates
+            st.markdown("")
+            st.markdown("**Parent Updates & Homework:**")
+            if not df_progress.empty:
+                student_name = stu_row.get("student", "")
+                stu_updates = df_progress[df_progress["student_name"].fillna("").str.strip() == student_name.strip()].copy()
+                stu_course = stu_row.get("course_id")
+                if len(stu_updates) == 0 and pd.notna(stu_course):
+                    stu_updates = df_progress[df_progress["course_id"] == stu_course].copy()
+
+                if len(stu_updates) > 0:
+                    stu_updates = stu_updates.sort_values("sent_at", ascending=False)
+
+                    hw_keywords = ["homework", "hw", "assignment", "assigned", "practice test",
+                                   "practice exam", "worksheet", "workbook", "practice problem",
+                                   "practice section", "bluebook", "khan academy", "khan",
+                                   "practice at home", "work at home", "independent practice"]
+                    completion_positive = ["completed", "finished", "did the", "did his", "did her",
+                                           "turned in", "submitted", "done with", "worked on",
+                                           "completed all", "great job on", "nice work on"]
+                    completion_negative = ["did not complete", "didn't complete", "hasn't completed",
+                                           "has not completed", "didn't do", "did not do",
+                                           "hasn't done", "has not done", "forgot", "missing",
+                                           "incomplete", "not completed", "didn't finish",
+                                           "did not finish", "hasn't finished", "skipped"]
+
+                    # Smarter homework detection — sentence-level analysis
+                    def analyze_homework(body_text, hw_kws, pos_kws, neg_kws):
+                        """Analyze body at sentence level for homework context."""
+                        if not body_text or body_text == "nan":
+                            return False, None, []
+                        lower = body_text.lower()
+                        import re as _re
+                        sentences = _re.split(r'[.!?\n]+', lower)
+
+                        # Assignment context words — keyword must appear near these
+                        assign_context = ["assign", "this week", "next week", "weekend",
+                                          "before our", "complete", "work on", "practice",
+                                          "please", "should", "need to", "will be", "includes",
+                                          "i want you", "i'd like you", "try to", "make sure"]
+
+                        hw_sentences = []
+                        has_hw = False
+                        completed = None
+
+                        for sent in sentences:
+                            sent = sent.strip()
+                            if not sent:
+                                continue
+
+                            # Check for core homework keywords (not "practice exam" alone)
+                            core_hw = ["homework", "hw ", "home work", "assignment",
+                                       "worksheet", "workbook", "independent practice",
+                                       "practice at home", "work at home"]
+                            # Contextual keywords — only count if in assignment context
+                            contextual_hw = ["practice test", "practice exam", "bluebook",
+                                             "khan academy", "khan", "practice section",
+                                             "practice problems"]
+
+                            has_core = any(kw in sent for kw in core_hw)
+                            has_contextual = any(kw in sent for kw in contextual_hw)
+                            has_context = any(ctx in sent for ctx in assign_context)
+
+                            if has_core or (has_contextual and has_context):
+                                has_hw = True
+                                # Check completion in this sentence
+                                has_neg = any(kw in sent for kw in neg_kws)
+                                has_pos = any(kw in sent for kw in pos_kws)
+                                # Also check for praise patterns indicating completion
+                                praise = any(p in sent for p in [
+                                    "great job", "incredible job", "nice work",
+                                    "well done", "excellent", "good job",
+                                    "did a great", "did an amazing", "did an incredible",
+                                    "did a wonderful", "did a fantastic",
+                                    "all of the", "all the", "every"])
+                                if has_neg:
+                                    completed = "not_completed"
+                                elif has_pos or (praise and has_core):
+                                    if completed != "not_completed":
+                                        completed = "completed"
+                                elif completed is None:
+                                    completed = "assigned"
+                                hw_sentences.append(sent)
+
+                        return has_hw, completed, hw_sentences
+
+                    hw_results = []
                     for _, upd in stu_updates.iterrows():
+                        body_raw = str(upd.get("body", ""))
                         date_val = upd["sent_at"].strftime("%Y-%m-%d") if pd.notna(upd.get("sent_at")) else "—"
                         tutor_val = upd.get("tutor", "—")
                         msg_type = upd.get("message_type", "—")
-                        body_raw = str(upd.get("body", ""))
 
                         hw_found, hw_status, hw_sents = analyze_homework(
                             body_raw, hw_keywords, completion_positive, completion_negative
@@ -1879,349 +1800,504 @@ else:
 
                         if hw_found:
                             if hw_status == "not_completed":
-                                border = "#fecaca"
-                                badge = "<span style='background:#fef2f2; color:#991b1b; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:600;'>❌ HW Not Completed</span>"
+                                status_str = "❌ Not completed"
                             elif hw_status == "completed":
-                                border = "#bbf7d0"
-                                badge = "<span style='background:#f0fdf4; color:#166534; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:600;'>✅ HW Completed</span>"
+                                status_str = "✅ Completed"
                             else:
-                                border = "#fde68a"
-                                badge = "<span style='background:#fffbeb; color:#854d0e; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:600;'>📝 HW Assigned</span>"
+                                status_str = "📝 Assigned (no status)"
                         else:
-                            border = "#e2e8f0"
-                            badge = "<span style='background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:4px; font-size:0.75rem;'>No HW mention</span>"
+                            status_str = "—"
 
-                        highlighted = highlight_body(body_raw, hw_keywords, completion_positive, completion_negative)
+                        hw_results.append({
+                            "Date": date_val,
+                            "Type": msg_type,
+                            "Tutor": tutor_val,
+                            "HW Mentioned": "✅" if hw_found else "❌",
+                            "Status": status_str,
+                        })
 
-                        st.markdown(
-                            f"<div style='border:1px solid {border}; border-radius:8px; padding:12px 16px; margin:8px 0;'>"
-                            f"<div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;'>"
-                            f"<span style='font-weight:600; color:#1e293b;'>{date_val} — {tutor_val}</span>"
-                            f"<span>{badge} <span style='color:#94a3b8; font-size:0.75rem; margin-left:8px;'>{msg_type}</span></span>"
-                            f"</div>"
-                            f"<div style='font-size:0.82rem; color:#374151; line-height:1.5;'>{highlighted}</div>"
-                            f"</div>",
-                            unsafe_allow_html=True,
-                        )
+                    hw_df = pd.DataFrame(hw_results)
+
+                    total_updates = len(hw_df)
+                    hw_mentioned_count = len(hw_df[hw_df["HW Mentioned"] == "✅"])
+                    hw_completed_count = len(hw_df[hw_df["Status"].str.contains("Completed", na=False) & ~hw_df["Status"].str.contains("Not completed", na=False)])
+                    hw_not_completed_count = len(hw_df[hw_df["Status"].str.contains("Not completed", na=False)])
+
+                    hm1, hm2, hm3, hm4 = st.columns(4)
+                    hm1.metric("Total Updates", total_updates)
+                    hm2.metric("HW Mentioned", f"{hw_mentioned_count}/{total_updates}")
+                    hm3.metric("HW Completed", hw_completed_count)
+                    hm4.metric("HW Not Completed", hw_not_completed_count)
+
+                    import html as _html
+
+                    def highlight_body(body_text, hw_kws, pos_kws, neg_kws):
+                        if not body_text or body_text == "nan":
+                            return ""
+                        text = str(body_text)
+                        lower = text.lower()
+
+                        core_hw = ["homework", "home work", "assignment", "worksheet",
+                                   "workbook", "independent practice", "practice at home"]
+                        contextual_hw = ["practice test", "practice exam", "bluebook",
+                                         "khan academy", "practice section", "practice problems"]
+                        assign_ctx = ["assign", "this week", "next week", "weekend",
+                                      "before our", "complete", "work on", "please",
+                                      "should", "need to", "will be", "includes"]
+                        praise = ["great job", "incredible job", "nice work", "well done",
+                                  "excellent work", "good job", "did a great", "did an amazing",
+                                  "did an incredible", "did a wonderful", "did a fantastic"]
+                        all_neg = ["did not complete", "didn\'t complete", "hasn\'t completed",
+                                   "has not completed", "didn\'t do", "did not do",
+                                   "hasn\'t done", "has not done", "forgot", "missing",
+                                   "incomplete", "not completed", "didn\'t finish",
+                                   "did not finish", "hasn\'t finished", "skipped"]
+                        all_pos = ["completed", "finished", "did the", "did his", "did her",
+                                   "turned in", "submitted", "done with", "worked on",
+                                   "completed all"] + praise
+
+                        # Collect (start, end, color) — no overlaps
+                        marks = []
+                        used = set()
+
+                        def add_mark(s, e, c):
+                            for pos in range(s, e):
+                                if pos in used:
+                                    return
+                            marks.append((s, e, c))
+                            for pos in range(s, e):
+                                used.add(pos)
+
+                        # Red first
+                        for kw in all_neg:
+                            i = 0
+                            while True:
+                                i = lower.find(kw, i)
+                                if i == -1: break
+                                add_mark(i, i + len(kw), "r")
+                                i += len(kw)
+
+                        # Green — only near core hw
+                        core_locs = []
+                        for kw in core_hw:
+                            i = 0
+                            while True:
+                                i = lower.find(kw, i)
+                                if i == -1: break
+                                core_locs.append(i)
+                                i += len(kw)
+
+                        for kw in all_pos:
+                            i = 0
+                            while True:
+                                i = lower.find(kw, i)
+                                if i == -1: break
+                                if any(abs(i - cp) < 200 for cp in core_locs):
+                                    add_mark(i, i + len(kw), "g")
+                                i += len(kw)
+
+                        # Yellow — core always
+                        for kw in core_hw:
+                            i = 0
+                            while True:
+                                i = lower.find(kw, i)
+                                if i == -1: break
+                                add_mark(i, i + len(kw), "y")
+                                i += len(kw)
+
+                        # Yellow — contextual only near assign context
+                        for kw in contextual_hw:
+                            i = 0
+                            while True:
+                                i = lower.find(kw, i)
+                                if i == -1: break
+                                window = lower[max(0,i-200):i+len(kw)+200]
+                                if any(ctx in window for ctx in assign_ctx):
+                                    add_mark(i, i + len(kw), "y")
+                                i += len(kw)
+
+                        if not marks:
+                            return text.replace("\n", "<br>")
+
+                        # Build output by walking through text
+                        styles = {
+                            "r": "background-color:#fecaca;color:#991b1b;padding:1px 3px;border-radius:3px;font-weight:600",
+                            "g": "background-color:#dcfce7;color:#166534;padding:1px 3px;border-radius:3px;font-weight:600",
+                            "y": "background-color:#fef9c3;color:#854d0e;padding:1px 3px;border-radius:3px;font-weight:600",
+                        }
+                        marks.sort(key=lambda x: x[0])
+                        parts = []
+                        pos = 0
+                        for s, e, c in marks:
+                            if s > pos:
+                                parts.append(text[pos:s])
+                            sty = styles[c]
+                            parts.append('<span style="' + sty + '">' + text[s:e] + '</span>')
+                            pos = e
+                        if pos < len(text):
+                            parts.append(text[pos:])
+                        result = "".join(parts)
+                        return result.replace("\n", "<br>")
+
+                    # Render updates in expander
+                    with st.expander(f"📄 View All Updates ({len(stu_updates)})", expanded=False):
+                        for _, upd in stu_updates.iterrows():
+                            date_val = upd["sent_at"].strftime("%Y-%m-%d") if pd.notna(upd.get("sent_at")) else "—"
+                            tutor_val = upd.get("tutor", "—")
+                            msg_type = upd.get("message_type", "—")
+                            body_raw = str(upd.get("body", ""))
+
+                            hw_found, hw_status, hw_sents = analyze_homework(
+                                body_raw, hw_keywords, completion_positive, completion_negative
+                            )
+
+                            if hw_found:
+                                if hw_status == "not_completed":
+                                    border = "#fecaca"
+                                    badge = "<span style='background:#fef2f2; color:#991b1b; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:600;'>❌ HW Not Completed</span>"
+                                elif hw_status == "completed":
+                                    border = "#bbf7d0"
+                                    badge = "<span style='background:#f0fdf4; color:#166534; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:600;'>✅ HW Completed</span>"
+                                else:
+                                    border = "#fde68a"
+                                    badge = "<span style='background:#fffbeb; color:#854d0e; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:600;'>📝 HW Assigned</span>"
+                            else:
+                                border = "#e2e8f0"
+                                badge = "<span style='background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:4px; font-size:0.75rem;'>No HW mention</span>"
+
+                            highlighted = highlight_body(body_raw, hw_keywords, completion_positive, completion_negative)
+
+                            st.markdown(
+                                f"<div style='border:1px solid {border}; border-radius:8px; padding:12px 16px; margin:8px 0;'>"
+                                f"<div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;'>"
+                                f"<span style='font-weight:600; color:#1e293b;'>{date_val} — {tutor_val}</span>"
+                                f"<span>{badge} <span style='color:#94a3b8; font-size:0.75rem; margin-left:8px;'>{msg_type}</span></span>"
+                                f"</div>"
+                                f"<div style='font-size:0.82rem; color:#374151; line-height:1.5;'>{highlighted}</div>"
+                                f"</div>",
+                                unsafe_allow_html=True,
+                            )
+                else:
+                    st.info("No parent/progress updates found for this student.")
             else:
-                st.info("No parent/progress updates found for this student.")
-        else:
-            st.warning("Parent update data not available.")
+                st.warning("Parent update data not available.")
 
-        # Exams table
-        st.markdown("")
-        st.markdown("**Exams:**")
-        if not df_sg_exams.empty and sid in df_sg_exams["student_id"].values:
-            stu_exams = df_sg_exams[df_sg_exams["student_id"] == sid].copy()
-            stu_exams["exam_date"] = pd.to_datetime(stu_exams["exam_date"], errors="coerce")
-            stu_exams = stu_exams.sort_values("exam_date")
-            stu_exams["score"] = pd.to_numeric(stu_exams["score"], errors="coerce")
+            # Exams table
+            st.markdown("")
+            st.markdown("**Exams:**")
+            if not df_sg_exams.empty and sid in df_sg_exams["student_id"].values:
+                stu_exams = df_sg_exams[df_sg_exams["student_id"] == sid].copy()
+                stu_exams["exam_date"] = pd.to_datetime(stu_exams["exam_date"], errors="coerce")
+                stu_exams = stu_exams.sort_values("exam_date")
+                stu_exams["score"] = pd.to_numeric(stu_exams["score"], errors="coerce")
 
-            # Calculate gaps between exams
-            stu_exams["days_since_prev"] = stu_exams["exam_date"].diff().dt.days
+                # Calculate gaps between exams
+                stu_exams["days_since_prev"] = stu_exams["exam_date"].diff().dt.days
 
-            exam_display = stu_exams[["exam_date", "exam_type", "exam_code", "score",
-                                      "before_or_after_tutoring", "source", "days_since_prev"]].copy()
-            exam_display["exam_date"] = exam_display["exam_date"].dt.strftime("%Y-%m-%d")
-            exam_display["score"] = exam_display["score"].apply(lambda x: f"{x:.0f}" if pd.notna(x) else "—")
-            exam_display["days_since_prev"] = exam_display["days_since_prev"].apply(
-                lambda x: f"{int(x)}d" if pd.notna(x) else "—")
-            exam_display = exam_display.rename(columns={
-                "exam_date": "Date", "exam_type": "Type", "exam_code": "Code",
-                "score": "Score", "before_or_after_tutoring": "Timing",
-                "source": "Source", "days_since_prev": "Gap",
-            })
-            st.dataframe(exam_display, hide_index=True, use_container_width=True)
-        else:
-            st.info("No exam data available for this student.")
-
-    # ── Score improvement chart ───────────────────────────────────────
-    has_scores = filtered_comp.dropna(subset=["starting_score", "latest_score"])
-    if len(has_scores) > 0:
-        st.markdown("")
-        st.markdown(
-            "<p class='section-label'>Results</p>"
-            "<p class='section-title'>Score Changes by Student</p>",
-            unsafe_allow_html=True,
-        )
-
-        # Determine test type per student
-        has_scores["_test"] = has_scores.apply(
-            lambda r: "SAT" if pd.notna(r.get("starting_score")) and r["starting_score"] > 100 else "ACT", axis=1
-        )
-
-        sat_scores = has_scores[has_scores["_test"] == "SAT"]
-        act_scores = has_scores[has_scores["_test"] == "ACT"]
-
-        sc_col1, sc_col2 = st.columns(2)
-
-        with sc_col1:
-            if len(sat_scores) > 0:
-                plot_sat = sat_scores[["student", "score_change"]].sort_values("score_change", ascending=True)
-                colors_sat = ["#10b981" if x >= 0 else "#ef4444" for x in plot_sat["score_change"]]
-                fig_sat = go.Figure()
-                fig_sat.add_trace(go.Bar(
-                    y=plot_sat["student"], x=plot_sat["score_change"], orientation="h",
-                    marker_color=colors_sat,
-                    text=plot_sat["score_change"].apply(lambda x: f"{x:+.0f}"),
-                    textposition="outside", textfont=dict(size=11),
-                ))
-                fig_sat.update_layout(
-                    title=dict(text="SAT", font=dict(size=14, color="#1e293b"), x=0.5, xanchor="center"),
-                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                    font=dict(family="DM Sans", color="#475569"),
-                    margin=dict(l=10, r=40, t=40, b=40),
-                    xaxis=dict(gridcolor="rgba(226,232,240,0.8)", title="Score Change"),
-                    yaxis=dict(automargin=True),
-                    height=max(300, len(plot_sat) * 30 + 80),
-                    showlegend=False,
-                )
-                st.plotly_chart(fig_sat, use_container_width=True)
+                exam_display = stu_exams[["exam_date", "exam_type", "exam_code", "score",
+                                          "before_or_after_tutoring", "source", "days_since_prev"]].copy()
+                exam_display["exam_date"] = exam_display["exam_date"].dt.strftime("%Y-%m-%d")
+                exam_display["score"] = exam_display["score"].apply(lambda x: f"{x:.0f}" if pd.notna(x) else "—")
+                exam_display["days_since_prev"] = exam_display["days_since_prev"].apply(
+                    lambda x: f"{int(x)}d" if pd.notna(x) else "—")
+                exam_display = exam_display.rename(columns={
+                    "exam_date": "Date", "exam_type": "Type", "exam_code": "Code",
+                    "score": "Score", "before_or_after_tutoring": "Timing",
+                    "source": "Source", "days_since_prev": "Gap",
+                })
+                st.dataframe(exam_display, hide_index=True, use_container_width=True)
             else:
-                st.info("No SAT students with score changes.")
+                st.info("No exam data available for this student.")
 
-        with sc_col2:
-            if len(act_scores) > 0:
-                plot_act = act_scores[["student", "score_change"]].sort_values("score_change", ascending=True)
-                colors_act = ["#10b981" if x >= 0 else "#ef4444" for x in plot_act["score_change"]]
-                fig_act = go.Figure()
-                fig_act.add_trace(go.Bar(
-                    y=plot_act["student"], x=plot_act["score_change"], orientation="h",
-                    marker_color=colors_act,
-                    text=plot_act["score_change"].apply(lambda x: f"{x:+.0f}"),
-                    textposition="outside", textfont=dict(size=11),
-                ))
-                fig_act.update_layout(
-                    title=dict(text="ACT", font=dict(size=14, color="#1e293b"), x=0.5, xanchor="center"),
-                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                    font=dict(family="DM Sans", color="#475569"),
-                    margin=dict(l=10, r=40, t=40, b=40),
-                    xaxis=dict(gridcolor="rgba(226,232,240,0.8)", title="Score Change"),
-                    yaxis=dict(automargin=True),
-                    height=max(300, len(plot_act) * 30 + 80),
-                    showlegend=False,
-                )
-                st.plotly_chart(fig_act, use_container_width=True)
-            else:
-                st.info("No ACT students with score changes.")
-
-    # Fetched at
-    if "fetched_at" in df_sg.columns:
-        st.markdown(
-            f"<p style='color:#94a3b8; font-size:0.75rem; margin-top:16px;'>"
-            f"Data last synced: {df_sg['fetched_at'].iloc[0]}</p>",
-            unsafe_allow_html=True,
-        )
-
-
-# ══════════════════════════════════════════════════════════════════════════
-# NEW SECTIONS — Refunds, Goal Attainment, Guarantee vs Premium Revenue
-# ══════════════════════════════════════════════════════════════════════════
-
-st.markdown("---")
-st.markdown(
-    "<p class='section-label'>Advisor Filter</p>"
-    "<p class='section-title'>Filter Everything Below by Advisor</p>",
-    unsafe_allow_html=True,
-)
-
-_all_advisors = sorted(df_sg["advisor"].dropna().unique().tolist()) if "advisor" in df_sg.columns else []
-selected_advisors = st.multiselect(
-    "Advisor (leave blank to show all)",
-    _all_advisors,
-    default=[],
-    key="new_sections_advisor_filter",
-)
-
-def _filter_by_advisor(df, advisor_col="advisor"):
-    if selected_advisors and advisor_col in df.columns:
-        return df[df[advisor_col].isin(selected_advisors)]
-    return df
-
-_sg_students_filtered = _filter_by_advisor(df_sg)
-_sg_student_ids_filtered = set(_sg_students_filtered["student_id"].dropna().astype(int).tolist())
-
-# ── Refund Revenue ────────────────────────────────────────────────────────
-st.markdown("")
-st.markdown(
-    "<p class='section-label'>Revenue</p>"
-    "<p class='section-title'>Refund Revenue</p>",
-    unsafe_allow_html=True,
-)
-
-try:
-    _bookings_df = load_sg_bookings_and_refunds()
-    _bookings_df = _bookings_df[_bookings_df["student_id"].isin(_sg_student_ids_filtered)]
-    _refund_rows = _bookings_df[_bookings_df["amount"] < 0]
-    _total_refunded = abs(_refund_rows["amount"].sum())
-    _net_revenue_all = _bookings_df["amount"].sum()
-
-    rf1, rf2, rf3 = st.columns(3)
-    rf1.metric("Total Refunded", f"${_total_refunded:,.2f}")
-    rf2.metric("Refund Transactions", f"{len(_refund_rows)}")
-    rf3.metric("Net SG Revenue (after refunds)", f"${_net_revenue_all:,.2f}")
-
-    if len(_refund_rows) > 0:
-        with st.expander("View refund transactions", expanded=False):
-            _refund_display = _refund_rows.merge(
-                df_sg[["student_id", "student", "advisor"]], on="student_id", how="left"
+        # ── Score improvement chart ───────────────────────────────────────
+        has_scores = filtered_comp.dropna(subset=["starting_score", "latest_score"])
+        if len(has_scores) > 0:
+            st.markdown("")
+            st.markdown(
+                "<p class='section-label'>Results</p>"
+                "<p class='section-title'>Score Changes by Student</p>",
+                unsafe_allow_html=True,
             )
-            st.dataframe(
-                _refund_display[["student", "advisor", "package_id", "amount", "booked_at"]]
-                .rename(columns={"amount": "Refund Amount", "booked_at": "Date", "package_id": "Package ID"})
-                .sort_values("Date", ascending=False),
-                hide_index=True, use_container_width=True,
+
+            # Determine test type per student
+            has_scores["_test"] = has_scores.apply(
+                lambda r: "SAT" if pd.notna(r.get("starting_score")) and r["starting_score"] > 100 else "ACT", axis=1
             )
-except Exception as e:
-    st.error(f"Could not load refund data: {e}")
 
-# ── Goal Attainment: First Test & After Awarded Hours ─────────────────────
-st.markdown("")
-st.markdown(
-    "<p class='section-label'>Outcomes</p>"
-    "<p class='section-title'>Goal Attainment</p>",
-    unsafe_allow_html=True,
-)
+            sat_scores = has_scores[has_scores["_test"] == "SAT"]
+            act_scores = has_scores[has_scores["_test"] == "ACT"]
 
-try:
-    _awarded_df = load_awarded_hours()
-    _awarded_by_student = (
-        _awarded_df.groupby("student_id")["won_at"].min().reset_index().rename(columns={"won_at": "awarded_at"})
-    )
+            sc_col1, sc_col2 = st.columns(2)
 
-    def _calc_target(score, test_type):
-        if pd.isna(score):
-            return np.nan
-        if test_type == "SAT":
-            return score + 150 if score < 1350 else 1500
-        return score + 2 if score < 29 else 31
+            with sc_col1:
+                if len(sat_scores) > 0:
+                    plot_sat = sat_scores[["student", "score_change"]].sort_values("score_change", ascending=True)
+                    colors_sat = ["#10b981" if x >= 0 else "#ef4444" for x in plot_sat["score_change"]]
+                    fig_sat = go.Figure()
+                    fig_sat.add_trace(go.Bar(
+                        y=plot_sat["student"], x=plot_sat["score_change"], orientation="h",
+                        marker_color=colors_sat,
+                        text=plot_sat["score_change"].apply(lambda x: f"{x:+.0f}"),
+                        textposition="outside", textfont=dict(size=11),
+                    ))
+                    fig_sat.update_layout(
+                        title=dict(text="SAT", font=dict(size=14, color="#1e293b"), x=0.5, xanchor="center"),
+                        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                        font=dict(family="DM Sans", color="#475569"),
+                        margin=dict(l=10, r=40, t=40, b=40),
+                        xaxis=dict(gridcolor="rgba(226,232,240,0.8)", title="Score Change"),
+                        yaxis=dict(automargin=True),
+                        height=max(300, len(plot_sat) * 30 + 80),
+                        showlegend=False,
+                    )
+                    st.plotly_chart(fig_sat, use_container_width=True)
+                else:
+                    st.info("No SAT students with score changes.")
 
-    SAT_TYPES = ["SAT", "Digital SAT"]
-    ACT_TYPES = ["ACT", "Digital ACT"]
+            with sc_col2:
+                if len(act_scores) > 0:
+                    plot_act = act_scores[["student", "score_change"]].sort_values("score_change", ascending=True)
+                    colors_act = ["#10b981" if x >= 0 else "#ef4444" for x in plot_act["score_change"]]
+                    fig_act = go.Figure()
+                    fig_act.add_trace(go.Bar(
+                        y=plot_act["student"], x=plot_act["score_change"], orientation="h",
+                        marker_color=colors_act,
+                        text=plot_act["score_change"].apply(lambda x: f"{x:+.0f}"),
+                        textposition="outside", textfont=dict(size=11),
+                    ))
+                    fig_act.update_layout(
+                        title=dict(text="ACT", font=dict(size=14, color="#1e293b"), x=0.5, xanchor="center"),
+                        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                        font=dict(family="DM Sans", color="#475569"),
+                        margin=dict(l=10, r=40, t=40, b=40),
+                        xaxis=dict(gridcolor="rgba(226,232,240,0.8)", title="Score Change"),
+                        yaxis=dict(automargin=True),
+                        height=max(300, len(plot_act) * 30 + 80),
+                        showlegend=False,
+                    )
+                    st.plotly_chart(fig_act, use_container_width=True)
+                else:
+                    st.info("No ACT students with score changes.")
 
-    _goal_rows = []
-    for _, sg_row in _sg_students_filtered.iterrows():
-        sid = sg_row["student_id"]
-        stu_exams = df_sg_exams[df_sg_exams["student_id"] == sid].copy()
-        if stu_exams.empty:
-            continue
-        stu_exams["exam_date"] = pd.to_datetime(stu_exams["exam_date"], errors="coerce")
-        before_all = stu_exams[stu_exams["before_or_after_tutoring"] == "before"].sort_values("exam_date", ascending=False)
-        if before_all.empty:
-            continue
-        baseline = before_all.iloc[0]["score"]
-        test_type = "SAT" if baseline > 100 else "ACT"
-        target = _calc_target(baseline, test_type)
-        type_filter = SAT_TYPES if test_type == "SAT" else ACT_TYPES
+        # Fetched at
+        if "fetched_at" in df_sg.columns:
+            st.markdown(
+                f"<p style='color:#94a3b8; font-size:0.75rem; margin-top:16px;'>"
+                f"Data last synced: {df_sg['fetched_at'].iloc[0]}</p>",
+                unsafe_allow_html=True,
+            )
+with tab3:
 
-        typed_after = stu_exams[
-            stu_exams["exam_type"].isin(type_filter) & (stu_exams["before_or_after_tutoring"] == "after")
-        ].sort_values("exam_date")
-        if typed_after.empty:
-            continue
 
-        first_score = typed_after.iloc[0]["score"]
-        row = {
-            "student_id": sid, "student": sg_row.get("student"), "advisor": sg_row.get("advisor"),
-            "test_type": test_type, "baseline": baseline, "target": target,
-            "first_test_score": first_score, "reached_goal_first_test": first_score >= target,
-        }
+    # ══════════════════════════════════════════════════════════════════════════
+    # NEW SECTIONS — Refunds, Goal Attainment, Guarantee vs Premium Revenue
+    # ══════════════════════════════════════════════════════════════════════════
 
-        aw = _awarded_by_student[_awarded_by_student["student_id"] == sid]
-        if len(aw) > 0:
-            awarded_at = aw.iloc[0]["awarded_at"]
-            after_award = typed_after[typed_after["exam_date"] > awarded_at]
-            row["awarded_hours"] = True
-            if len(after_award) > 0:
-                second_score = after_award.iloc[0]["score"]
-                row["second_test_score"] = second_score
-                row["reached_goal_after_award"] = second_score >= target
-        else:
-            row["awarded_hours"] = False
-
-        _goal_rows.append(row)
-
-    _goal_df = pd.DataFrame(_goal_rows)
-
-    if len(_goal_df) > 0:
-        gm1, gm2, gm3 = st.columns(3)
-        _n_first = len(_goal_df)
-        _reached_first = int(_goal_df["reached_goal_first_test"].sum())
-        gm1.metric("Reached Goal — First Test", f"{_reached_first} of {_n_first}",
-                    f"{_reached_first/_n_first*100:.0f}%" if _n_first > 0 else None)
-
-        _with_award = _goal_df[_goal_df.get("awarded_hours", False) == True] if "awarded_hours" in _goal_df.columns else pd.DataFrame()
-        _n_award = len(_with_award)
-        gm2.metric("Students Awarded Extra Hours", f"{_n_award}")
-
-        if _n_award > 0 and "reached_goal_after_award" in _with_award.columns:
-            _has_second = _with_award["second_test_score"].notna().sum() if "second_test_score" in _with_award.columns else 0
-            _reached_second = int(_with_award["reached_goal_after_award"].fillna(False).sum())
-            gm3.metric("Reached Goal — After Award", f"{_reached_second} of {_has_second}",
-                        f"{_reached_second/_has_second*100:.0f}%" if _has_second > 0 else None)
-
-        with st.expander("View student-level goal detail", expanded=False):
-            _display_cols = ["student", "advisor", "test_type", "baseline", "target",
-                              "first_test_score", "reached_goal_first_test",
-                              "awarded_hours", "second_test_score", "reached_goal_after_award"]
-            _display_cols = [c for c in _display_cols if c in _goal_df.columns]
-            st.dataframe(_goal_df[_display_cols], hide_index=True, use_container_width=True)
-    else:
-        st.info("No students with usable baseline + post-tutoring test data for this filter.")
-
-except Exception as e:
-    st.error(f"Could not compute goal attainment: {e}")
-
-# ── Guarantee vs Other Premium Revenue ────────────────────────────────────
-st.markdown("")
-st.markdown(
-    "<p class='section-label'>Revenue Comparison</p>"
-    "<p class='section-title'>Guarantee vs. Other Premium Revenue</p>",
-    unsafe_allow_html=True,
-)
-
-try:
-    _pvp_df = load_premium_vs_sg_monthly()
-    if selected_advisors:
-        _advisor_lookup = load_premium_advisor_lookup()
-        _pvp_df = _pvp_df.merge(_advisor_lookup, on="student_id", how="left")
-        _pvp_df = _pvp_df[_pvp_df["advisor"].isin(selected_advisors)]
-
-    _pvp_df["month"] = _pvp_df["won_at"].dt.to_period("M").astype(str)
-    _monthly = _pvp_df.groupby(["month", "is_sg"])["net_revenue"].sum().reset_index()
-    _monthly_pivot = _monthly.pivot(index="month", columns="is_sg", values="net_revenue").fillna(0)
-    _monthly_pivot.columns = ["Other Premium Revenue" if c == 0 else "Guarantee Revenue" for c in _monthly_pivot.columns]
-    _monthly_pivot = _monthly_pivot.reset_index().sort_values("month")
-
-    pv1, pv2 = st.columns(2)
-    pv1.metric("Total Guarantee Revenue", f"${_pvp_df[_pvp_df['is_sg']==1]['net_revenue'].sum():,.2f}")
-    pv2.metric("Total Other Premium Revenue", f"${_pvp_df[_pvp_df['is_sg']==0]['net_revenue'].sum():,.2f}")
-
-    fig_pvp = go.Figure()
-    fig_pvp.add_trace(go.Scatter(
-        x=_monthly_pivot["month"], y=_monthly_pivot["Guarantee Revenue"],
-        name="Guarantee Revenue", mode="lines+markers", marker_color="#2563eb",
-    ))
-    fig_pvp.add_trace(go.Scatter(
-        x=_monthly_pivot["month"], y=_monthly_pivot["Other Premium Revenue"],
-        name="Other Premium Revenue", mode="lines+markers", marker_color="#94a3b8",
-        yaxis="y2",
-    ))
-    fig_pvp.update_layout(
-        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="DM Sans", color="#475569"),
-        legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center"),
-        margin=dict(l=40, r=40, t=40, b=40),
-        xaxis=dict(title="Month", gridcolor="rgba(226,232,240,0.8)"),
-        yaxis=dict(title="Guarantee Revenue ($)", gridcolor="rgba(226,232,240,0.8)"),
-        yaxis2=dict(title="Other Premium Revenue ($)", overlaying="y", side="right"),
-        height=420,
-    )
-    st.plotly_chart(fig_pvp, use_container_width=True)
+    st.markdown("---")
     st.markdown(
-        "<p style='color:#94a3b8; font-size:0.75rem;'>Guarantee Revenue plotted against the left axis, "
-        "Other Premium Revenue against the right axis (different scales — Guarantee volume is much smaller).</p>",
+        "<p class='section-label'>Advisor Filter</p>"
+        "<p class='section-title'>Filter Everything Below by Advisor</p>",
         unsafe_allow_html=True,
     )
-except Exception as e:
-    st.error(f"Could not build revenue comparison: {e}")
+
+    _all_advisors = sorted(df_sg["advisor"].dropna().unique().tolist()) if "advisor" in df_sg.columns else []
+    selected_advisors = st.multiselect(
+        "Advisor (leave blank to show all)",
+        _all_advisors,
+        default=[],
+        key="new_sections_advisor_filter",
+    )
+
+    def _filter_by_advisor(df, advisor_col="advisor"):
+        if selected_advisors and advisor_col in df.columns:
+            return df[df[advisor_col].isin(selected_advisors)]
+        return df
+
+    _sg_students_filtered = _filter_by_advisor(df_sg)
+    _sg_student_ids_filtered = set(_sg_students_filtered["student_id"].dropna().astype(int).tolist())
+
+    # ── Refund Revenue ────────────────────────────────────────────────────────
+    st.markdown("")
+    st.markdown(
+        "<p class='section-label'>Revenue</p>"
+        "<p class='section-title'>Refund Revenue</p>",
+        unsafe_allow_html=True,
+    )
+
+    try:
+        _bookings_df = load_sg_bookings_and_refunds()
+        _bookings_df = _bookings_df[_bookings_df["student_id"].isin(_sg_student_ids_filtered)]
+        _refund_rows = _bookings_df[_bookings_df["amount"] < 0]
+        _total_refunded = abs(_refund_rows["amount"].sum())
+        _net_revenue_all = _bookings_df["amount"].sum()
+
+        rf1, rf2, rf3 = st.columns(3)
+        rf1.metric("Total Refunded", f"${_total_refunded:,.2f}")
+        rf2.metric("Refund Transactions", f"{len(_refund_rows)}")
+        rf3.metric("Net SG Revenue (after refunds)", f"${_net_revenue_all:,.2f}")
+
+        if len(_refund_rows) > 0:
+            with st.expander("View refund transactions", expanded=False):
+                _refund_display = _refund_rows.merge(
+                    df_sg[["student_id", "student", "advisor"]], on="student_id", how="left"
+                )
+                st.dataframe(
+                    _refund_display[["student", "advisor", "package_id", "amount", "booked_at"]]
+                    .rename(columns={"amount": "Refund Amount", "booked_at": "Date", "package_id": "Package ID"})
+                    .sort_values("Date", ascending=False),
+                    hide_index=True, use_container_width=True,
+                )
+    except Exception as e:
+        st.error(f"Could not load refund data: {e}")
+
+    # ── Goal Attainment: First Test & After Awarded Hours ─────────────────────
+    st.markdown("")
+    st.markdown(
+        "<p class='section-label'>Outcomes</p>"
+        "<p class='section-title'>Goal Attainment</p>",
+        unsafe_allow_html=True,
+    )
+
+    try:
+        _awarded_df = load_awarded_hours()
+        _awarded_by_student = (
+            _awarded_df.groupby("student_id")["won_at"].min().reset_index().rename(columns={"won_at": "awarded_at"})
+        )
+
+        def _calc_target(score, test_type):
+            if pd.isna(score):
+                return np.nan
+            if test_type == "SAT":
+                return score + 150 if score < 1350 else 1500
+            return score + 2 if score < 29 else 31
+
+        SAT_TYPES = ["SAT", "Digital SAT"]
+        ACT_TYPES = ["ACT", "Digital ACT"]
+
+        _goal_rows = []
+        for _, sg_row in _sg_students_filtered.iterrows():
+            sid = sg_row["student_id"]
+            stu_exams = df_sg_exams[df_sg_exams["student_id"] == sid].copy()
+            if stu_exams.empty:
+                continue
+            stu_exams["exam_date"] = pd.to_datetime(stu_exams["exam_date"], errors="coerce")
+            before_all = stu_exams[stu_exams["before_or_after_tutoring"] == "before"].sort_values("exam_date", ascending=False)
+            if before_all.empty:
+                continue
+            baseline = before_all.iloc[0]["score"]
+            test_type = "SAT" if baseline > 100 else "ACT"
+            target = _calc_target(baseline, test_type)
+            type_filter = SAT_TYPES if test_type == "SAT" else ACT_TYPES
+
+            typed_after = stu_exams[
+                stu_exams["exam_type"].isin(type_filter) & (stu_exams["before_or_after_tutoring"] == "after")
+            ].sort_values("exam_date")
+            if typed_after.empty:
+                continue
+
+            first_score = typed_after.iloc[0]["score"]
+            row = {
+                "student_id": sid, "student": sg_row.get("student"), "advisor": sg_row.get("advisor"),
+                "test_type": test_type, "baseline": baseline, "target": target,
+                "first_test_score": first_score, "reached_goal_first_test": first_score >= target,
+            }
+
+            aw = _awarded_by_student[_awarded_by_student["student_id"] == sid]
+            if len(aw) > 0:
+                awarded_at = aw.iloc[0]["awarded_at"]
+                after_award = typed_after[typed_after["exam_date"] > awarded_at]
+                row["awarded_hours"] = True
+                if len(after_award) > 0:
+                    second_score = after_award.iloc[0]["score"]
+                    row["second_test_score"] = second_score
+                    row["reached_goal_after_award"] = second_score >= target
+            else:
+                row["awarded_hours"] = False
+
+            _goal_rows.append(row)
+
+        _goal_df = pd.DataFrame(_goal_rows)
+
+        if len(_goal_df) > 0:
+            gm1, gm2, gm3 = st.columns(3)
+            _n_first = len(_goal_df)
+            _reached_first = int(_goal_df["reached_goal_first_test"].sum())
+            gm1.metric("Reached Goal — First Test", f"{_reached_first} of {_n_first}",
+                        f"{_reached_first/_n_first*100:.0f}%" if _n_first > 0 else None)
+
+            _with_award = _goal_df[_goal_df.get("awarded_hours", False) == True] if "awarded_hours" in _goal_df.columns else pd.DataFrame()
+            _n_award = len(_with_award)
+            gm2.metric("Students Awarded Extra Hours", f"{_n_award}")
+
+            if _n_award > 0 and "reached_goal_after_award" in _with_award.columns:
+                _has_second = _with_award["second_test_score"].notna().sum() if "second_test_score" in _with_award.columns else 0
+                _reached_second = int(_with_award["reached_goal_after_award"].fillna(False).sum())
+                gm3.metric("Reached Goal — After Award", f"{_reached_second} of {_has_second}",
+                            f"{_reached_second/_has_second*100:.0f}%" if _has_second > 0 else None)
+
+            with st.expander("View student-level goal detail", expanded=False):
+                _display_cols = ["student", "advisor", "test_type", "baseline", "target",
+                                  "first_test_score", "reached_goal_first_test",
+                                  "awarded_hours", "second_test_score", "reached_goal_after_award"]
+                _display_cols = [c for c in _display_cols if c in _goal_df.columns]
+                st.dataframe(_goal_df[_display_cols], hide_index=True, use_container_width=True)
+        else:
+            st.info("No students with usable baseline + post-tutoring test data for this filter.")
+
+    except Exception as e:
+        st.error(f"Could not compute goal attainment: {e}")
+
+    # ── Guarantee vs Other Premium Revenue ────────────────────────────────────
+    st.markdown("")
+    st.markdown(
+        "<p class='section-label'>Revenue Comparison</p>"
+        "<p class='section-title'>Guarantee vs. Other Premium Revenue</p>",
+        unsafe_allow_html=True,
+    )
+
+    try:
+        _pvp_df = load_premium_vs_sg_monthly()
+        if selected_advisors:
+            _pvp_student_ids = _pvp_df["student_id"].dropna().unique().tolist()
+            _advisor_lookup = load_premium_advisor_lookup(_pvp_student_ids)
+            _pvp_df = _pvp_df.merge(_advisor_lookup, on="student_id", how="left")
+            _pvp_df = _pvp_df[_pvp_df["advisor"].isin(selected_advisors)]
+
+        _pvp_df["month"] = _pvp_df["won_at"].dt.to_period("M").astype(str)
+        _monthly = _pvp_df.groupby(["month", "is_sg"])["net_revenue"].sum().reset_index()
+        _monthly_pivot = _monthly.pivot(index="month", columns="is_sg", values="net_revenue").fillna(0)
+        _monthly_pivot.columns = ["Other Premium Revenue" if c == 0 else "Guarantee Revenue" for c in _monthly_pivot.columns]
+        _monthly_pivot = _monthly_pivot.reset_index().sort_values("month")
+
+        pv1, pv2 = st.columns(2)
+        pv1.metric("Total Guarantee Revenue", f"${_pvp_df[_pvp_df['is_sg']==1]['net_revenue'].sum():,.2f}")
+        pv2.metric("Total Other Premium Revenue", f"${_pvp_df[_pvp_df['is_sg']==0]['net_revenue'].sum():,.2f}")
+
+        fig_pvp = go.Figure()
+        fig_pvp.add_trace(go.Scatter(
+            x=_monthly_pivot["month"], y=_monthly_pivot["Guarantee Revenue"],
+            name="Guarantee Revenue", mode="lines+markers", marker_color="#2563eb",
+        ))
+        fig_pvp.add_trace(go.Scatter(
+            x=_monthly_pivot["month"], y=_monthly_pivot["Other Premium Revenue"],
+            name="Other Premium Revenue", mode="lines+markers", marker_color="#94a3b8",
+            yaxis="y2",
+        ))
+        fig_pvp.update_layout(
+            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="DM Sans", color="#475569"),
+            legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center"),
+            margin=dict(l=40, r=40, t=40, b=40),
+            xaxis=dict(title="Month", gridcolor="rgba(226,232,240,0.8)"),
+            yaxis=dict(title="Guarantee Revenue ($)", gridcolor="rgba(226,232,240,0.8)"),
+            yaxis2=dict(title="Other Premium Revenue ($)", overlaying="y", side="right"),
+            height=420,
+        )
+        st.plotly_chart(fig_pvp, use_container_width=True)
+        st.markdown(
+            "<p style='color:#94a3b8; font-size:0.75rem;'>Guarantee Revenue plotted against the left axis, "
+            "Other Premium Revenue against the right axis (different scales — Guarantee volume is much smaller).</p>",
+            unsafe_allow_html=True,
+        )
+    except Exception as e:
+        st.error(f"Could not build revenue comparison: {e}")
