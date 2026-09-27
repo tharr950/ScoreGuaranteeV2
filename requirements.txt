@@ -1,0 +1,9 @@
+streamlit
+pandas
+numpy
+psycopg2-binary
+plotly
+openpyxl
+mysql-connector-python
+requests
+PyGithub
