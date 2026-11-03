@@ -344,44 +344,66 @@ def load_sg_bookings_and_refunds():
 
 @st.cache_data(ttl=3600)
 def load_awarded_hours():
-    """
-    Detects 'awarded' (free) follow-up packages: a later package for the
-    same SG student, real hours, $0 net revenue, excluding Transcript
-    Adjustment lines. All via Redshift (dw.tutor_packages/bookings/line_items).
-    """
+    """Free hours given through Score Guarantee coupon codes (line item discounts tied to those codes)."""
     conn = get_redshift_connection()
     query = """
-    WITH sg_packages AS (
-        SELECT id AS sg_package_id, student_id, won_at AS sg_won_at
-        FROM dw.tutor_packages
-        WHERE name ILIKE '%%Score Guarantee%%'
-    ),
-    candidate_followups AS (
-        SELECT
-            sg.sg_package_id, sg.student_id, sg.sg_won_at,
-            tp.id AS package_id, tp.won_at, tp.duration/60.0 AS package_hours, tp.name
-        FROM sg_packages sg
-            JOIN dw.tutor_packages tp
-                ON tp.student_id = sg.student_id
-                AND tp.won_at > sg.sg_won_at
-                AND tp.id != sg.sg_package_id
-        WHERE tp.name NOT ILIKE '%%Transcript Adjustment%%'
-            AND tp.name NOT ILIKE '%%Score Guarantee%%'
-    ),
-    followup_revenue AS (
-        SELECT
-            cf.sg_package_id, cf.student_id, cf.package_id, cf.won_at,
-            cf.package_hours, cf.name,
-            SUM(b.amount) AS net_revenue
-        FROM candidate_followups cf
-            LEFT JOIN dw.bookings b ON b.item_type = 'TutorPackage' AND b.item_id = cf.package_id
-        GROUP BY cf.sg_package_id, cf.student_id, cf.package_id, cf.won_at, cf.package_hours, cf.name
-    )
-    SELECT * FROM followup_revenue
-    WHERE package_hours > 0 AND (net_revenue = 0 OR net_revenue IS NULL)
+    SELECT tp.id AS package_id, tp.student_id, tp.won_at, tp.duration/60.0 AS package_hours,
+           tp.name, cc.code AS coupon_code, -d.amount AS discount_amount
+    FROM dw.line_item_discounts d
+        JOIN dw.coupon_codes cc ON cc.id = d.coupon_code_id
+        JOIN dw.line_items li ON li.id = d.line_item_id
+        JOIN dw.tutor_packages tp ON li.item_type = 'TutorPackage' AND tp.id = li.item_id
+    WHERE cc.code IN ('SG1','SG2','SG3','SG4','SG5','SG6','SG7','SG8','SG9','SG10',
+                      'COLLIER-1794','REDMOND-597','STEELE-SCORE-GUARANTEE-3588',
+                      'WELLENIUS-1794','STEELE-897')
     """
     df = pd.read_sql(query, conn)
     df["won_at"] = pd.to_datetime(df["won_at"], errors="coerce")
+    for c in ["package_hours", "discount_amount"]:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+    return df
+
+
+@st.cache_data(ttl=3600)
+def load_sg_refunds():
+    """Refund requests on Score Guarantee packages, with money re-collected after the refund."""
+    conn = get_redshift_connection()
+    query = """
+    WITH sg_pkgs AS (
+        SELECT id AS package_id FROM dw.tutor_packages WHERE name ILIKE '%%Score Guarantee%%'
+    ),
+    rr AS (
+        SELECT r.id AS request_id, r.status, r.amount, r.reason, r.created_at AS requested_at,
+               li.student_id, li.item_id AS package_id
+        FROM dw.refund_requests r
+            JOIN dw.line_items li ON li.id = r.line_item_id
+        WHERE li.item_type = 'TutorPackage' AND li.item_id IN (SELECT package_id FROM sg_pkgs)
+    ),
+    refund_pay AS (
+        SELECT refund_request_id AS request_id, MIN("date") AS refunded_at
+        FROM dw.payments
+        WHERE refund_request_id IS NOT NULL AND successful
+        GROUP BY 1
+    ),
+    repaid AS (
+        SELECT rr.request_id, SUM(op.amount) AS repaid_after
+        FROM rr
+            JOIN refund_pay rp ON rp.request_id = rr.request_id
+            JOIN dw.orders o ON o.student_id = rr.student_id
+            JOIN dw.order_payments op ON op.order_id = o.id
+            JOIN dw.payments p ON p.id = op.payment_id
+                AND p.successful AND p."type" NOT ILIKE '%%Refund%%' AND p."date" > rp.refunded_at
+        GROUP BY rr.request_id
+    )
+    SELECT rr.*, rp.refunded_at, COALESCE(rep.repaid_after, 0) AS repaid_after
+    FROM rr
+        LEFT JOIN refund_pay rp ON rp.request_id = rr.request_id
+        LEFT JOIN repaid rep ON rep.request_id = rr.request_id
+    """
+    df = pd.read_sql(query, conn)
+    df["refunded_at"] = pd.to_datetime(df["refunded_at"], errors="coerce")
+    for c in ["amount", "repaid_after"]:
+        df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
     return df
 
 
@@ -2320,7 +2342,13 @@ with tab3:
     try:
         _bookings_df = load_sg_bookings_and_refunds()
         _bookings_df = _bookings_df[_bookings_df["student_id"].isin(_sg_student_ids_filtered)]
-        _refund_rows = _bookings_df[_bookings_df["amount"] < 0]
+        _rf_all = load_sg_refunds()
+        _rf = _rf_all[(_rf_all["status"] == "processed") & (_rf_all["student_id"].isin(_sg_student_ids_filtered))].copy()
+        _rf["net_refunded"] = _rf["amount"] - _rf["repaid_after"]
+        _rf = _rf[_rf["net_refunded"] > 0]
+        _refund_rows = pd.DataFrame({"student_id": _rf["student_id"], "package_id": _rf["package_id"],
+                                     "amount": -_rf["net_refunded"], "booked_at": _rf["refunded_at"]})
+        _pending_cb = _rf_all[(_rf_all["status"] == "pending") & (_rf_all["student_id"].isin(_sg_student_ids_filtered))]
         _total_refunded = abs(_refund_rows["amount"].sum())
         _net_revenue_all = _bookings_df["amount"].sum()
 
@@ -2328,6 +2356,10 @@ with tab3:
         rf1.metric("Total Refunded", f"${_total_refunded:,.2f}")
         rf2.metric("Refund Transactions", f"{len(_refund_rows)}")
         rf3.metric("Net SG Revenue (after refunds)", f"${_net_revenue_all:,.2f}")
+        st.caption(
+            "Counts processed refunds where the money was not collected again afterward. "
+            f"Not included: {len(_pending_cb)} pending chargeback(s) totaling ${_pending_cb['amount'].sum():,.2f}."
+        )
 
         if len(_refund_rows) > 0:
             with st.expander("View refund transactions", expanded=False):
