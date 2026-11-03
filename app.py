@@ -21,8 +21,8 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    st.set_page_config(page_title="Score Guarantee V2", layout="wide")
-    st.title("Score Guarantee V2")
+    st.set_page_config(page_title="Sales Dashboard", layout="wide")
+    st.title("Sales Dashboard")
     pw = st.text_input("Password", type="password")
     if st.button("Log in"):
         if pw == st.secrets["auth"]["password"]:
@@ -32,7 +32,7 @@ if not st.session_state.authenticated:
             st.error("Incorrect password")
     st.stop()
 
-st.set_page_config(page_title="Score Guarantee V2", layout="wide")
+st.set_page_config(page_title="Sales Dashboard", layout="wide")
 
 
 
@@ -455,7 +455,7 @@ def load_qualifying_premium_sales():
         WHERE tp.name ILIKE '%%Premium%%'
             AND tp.name NOT ILIKE '%%Transcript Adjustment%%'
             AND tp.status = 'won'
-            AND tp.duration/60.0 >= 20
+            AND tp.duration/60.0 >= 10
     )
     SELECT
         q.package_id, q.student_id, q.won_at, q.name, q.package_hours, q.is_sg,
@@ -470,6 +470,24 @@ def load_qualifying_premium_sales():
     df["net_revenue"] = pd.to_numeric(df["net_revenue"], errors="coerce").fillna(0)
     return df
 
+@st.cache_data(ttl=3600)
+def load_attendance_taken(session_ids):
+    """Redshift: sessions where attendance has been taken (attendance row with attended not null)."""
+    if not session_ids:
+        return pd.DataFrame(columns=["session_id", "attendance_taken"])
+    conn = get_redshift_connection()
+    ids_str = ",".join(str(int(x)) for x in session_ids)
+    query = f"""
+    SELECT a.session_id,
+           MAX(CASE WHEN a.attended IS NOT NULL THEN 1 ELSE 0 END) AS attendance_taken
+    FROM dw.attendances a
+    WHERE a.session_id IN ({ids_str})
+    GROUP BY a.session_id
+    """
+    df = pd.read_sql(query, conn)
+    df["attendance_taken"] = df["attendance_taken"] == 1
+    return df
+
 # ── Load data ─────────────────────────────────────────────────────────────
 try:
     df_roster = load_team_roster()
@@ -478,6 +496,16 @@ try:
     df_sg_exams = load_sg_exams()
     _sg_course_ids = df_sg["course_id"].dropna().unique().tolist() if "course_id" in df_sg.columns else []
     df_progress = load_parent_progress_updates(_sg_course_ids)
+    try:
+        if not df_sg_sessions.empty and "session_id" in df_sg_sessions.columns:
+            _taken = load_attendance_taken(df_sg_sessions["session_id"].dropna().astype(int).unique().tolist())
+            df_sg_sessions = df_sg_sessions.merge(_taken, on="session_id", how="left")
+            df_sg_sessions["attendance_taken"] = df_sg_sessions["attendance_taken"].fillna(False).astype(bool)
+        else:
+            df_sg_sessions["attendance_taken"] = True
+    except Exception as _e:
+        df_sg_sessions["attendance_taken"] = True
+        st.warning(f"Could not check which sessions have attendance taken; showing all past sessions. ({_e})")
     # Remove exam entries with blank/null scores
     if not df_sg_exams.empty:
         df_sg_exams["score"] = pd.to_numeric(df_sg_exams["score"], errors="coerce")
@@ -494,8 +522,8 @@ except Exception as e:
 with st.sidebar:
     st.markdown(
         "<p style='font-family: Source Serif 4, serif; font-size:1.4rem; "
-        "color:#1e293b; margin-bottom:0;'>Score Guarantee</p>"
-        "<p style='color:#64748b; font-size:0.8rem; margin-top:0;'>Compliance Tracker</p>",
+        "color:#1e293b; margin-bottom:0;'>Sales Dashboard</p>"
+        "<p style='color:#64748b; font-size:0.8rem; margin-top:0;'>Score Guarantee</p>",
         unsafe_allow_html=True,
     )
     st.divider()
@@ -532,8 +560,8 @@ else:
             mbm2.metric("Total Score Guarantee Students", len(_mb_df))
             if len(_mb_missing) > 0:
                 st.dataframe(
-                    _mb_missing[["student", "advisor", "tutor", "won_at"]]
-                    .rename(columns={"student": "Student", "advisor": "Advisor", "tutor": "Tutor", "won_at": "Won Date"})
+                    _mb_missing[["student", "advisor", "tutor", "won_at", "first_test_prep_session"]]
+                    .rename(columns={"student": "Student", "advisor": "Advisor", "tutor": "Tutor", "won_at": "Won Date", "first_test_prep_session": "First Session"})
                     .sort_values("Won Date", ascending=False),
                     hide_index=True, use_container_width=True,
                 )
@@ -552,12 +580,15 @@ else:
         )
         st.markdown(
             "<p style='color:#94a3b8; font-size:0.78rem;'>Includes any Premium-tier package "
-            "of 20+ hours with real revenue collected — the full population eligible for the "
+            "of 10+ hours with real revenue collected — the full population eligible for the "
             "guarantee, not just packages explicitly named Score Guarantee.</p>",
             unsafe_allow_html=True,
         )
         try:
             _sales_df = load_qualifying_premium_sales()
+            _dr = st.date_input("Sales date range", value=(date(2023, 1, 1), date.today()), key="sales_date_range")
+            if isinstance(_dr, (tuple, list)) and len(_dr) == 2:
+                _sales_df = _sales_df[(_sales_df["won_at"].dt.date >= _dr[0]) & (_sales_df["won_at"].dt.date <= _dr[1])].copy()
             _sales_df["week"] = _sales_df["won_at"].dt.to_period("W-SAT").apply(lambda p: p.start_time)
             _sales_df["month"] = _sales_df["won_at"].dt.to_period("M").astype(str)
 
@@ -571,7 +602,7 @@ else:
                         f"{len(_new_this_week) - len(_new_last_week):+d} vs last week")
             sm2.metric("Revenue This Week", f"${_new_this_week['net_revenue'].sum():,.0f}",
                         f"${_new_this_week['net_revenue'].sum() - _new_last_week['net_revenue'].sum():+,.0f} vs last week")
-            sm3.metric("Total Qualifying Sales (all time)", len(_sales_df))
+            sm3.metric("Total Qualifying Sales (selected range)", len(_sales_df))
 
             st.markdown("")
             st.markdown("**Weekly Trend**")
@@ -622,8 +653,7 @@ else:
         except Exception as e:
             st.error(f"Could not load sales tracking data: {e}")
 
-        st.markdown("---")
-
+    with tab2:
         # ── New Student Alert ─────────────────────────────────────────────
         sg_new_check = df_sg.copy()
         sg_new_check["won_at"] = pd.to_datetime(sg_new_check["won_at"], errors="coerce")
@@ -936,6 +966,32 @@ else:
         sg["points_to_target"] = sg["target_score"] - sg["latest_test_score"]
         sg["on_track"] = sg["latest_test_score"] >= sg["target_score"]
 
+        # ── Missed Sessions (last 7 days) ────────────────────────────────
+        try:
+            _ms = df_sg_sessions.copy()
+            _ms["starts_at"] = pd.to_datetime(_ms["starts_at"], errors="coerce")
+            _now = pd.Timestamp.now()
+            _ms = _ms[(_ms["starts_at"] <= _now) & (_ms["starts_at"] >= _now - pd.Timedelta(days=7))]
+            if "attendance_taken" in _ms.columns:
+                _ms = _ms[_ms["attendance_taken"]]
+            _ms = _ms[_ms["attended"] == 0].copy()
+            _ms["_sid"] = _ms["student_id"].astype(str).str.split(".").str[0]
+            _ms = _ms[~_ms["_sid"].isin(hidden_sids_alert)]
+            _ms = _ms.merge(df_sg[["student_id", "student", "advisor"]].drop_duplicates("student_id"), on="student_id", how="left")
+            with st.expander(f"⚠️ Missed Sessions — Last 7 Days ({len(_ms)})", expanded=False):
+                st.caption("Only sessions where attendance has been taken. Excludes students tagged Not Score Guarantee, Completed, or Refunded.")
+                if len(_ms) > 0:
+                    st.dataframe(
+                        _ms[["student", "advisor", "tutor", "starts_at"]]
+                        .rename(columns={"student": "Student", "advisor": "Advisor", "tutor": "Tutor", "starts_at": "Session"})
+                        .sort_values("Session", ascending=False),
+                        hide_index=True, use_container_width=True,
+                    )
+                else:
+                    st.success("No missed sessions in the last 7 days.")
+        except Exception as e:
+            st.error(f"Could not compute missed sessions: {e}")
+
     # ── Apply test type overrides directly to sg ──────────────────────
     # ── Re-derive scores per student based on test_type ─────────────
     # Build set of overridden student IDs so we don't overwrite them
@@ -1108,6 +1164,8 @@ else:
             stu_sess_all = df_sg_sessions[df_sg_sessions["student_id"] == sid].copy()
             stu_sess_all["starts_at"] = pd.to_datetime(stu_sess_all["starts_at"], errors="coerce")
             stu_sess = stu_sess_all[stu_sess_all["starts_at"] <= pd.Timestamp.now()]
+            if "attendance_taken" in stu_sess.columns:
+                stu_sess = stu_sess[stu_sess["attendance_taken"]]
             total_sessions = len(stu_sess)
             attended_sessions = int(stu_sess["attended"].sum())
             checks["5_attendance"] = attended_sessions == total_sessions
@@ -1190,6 +1248,8 @@ else:
         checks["starting_score"] = row.get("starting_score")
         checks["latest_score"] = row.get("latest_test_score")
         checks["score_change"] = row.get("score_change")
+        checks["won_at"] = row.get("won_at")
+        checks["first_session"] = row.get("first_test_prep_session")
         compliance_rows.append(checks)
 
     comp_df = pd.DataFrame(compliance_rows)
@@ -1383,6 +1443,8 @@ else:
                 f"✅ {int(r['max_session_gap'])}d" if pd.notna(r.get("max_session_gap")) else "—"
             ), axis=1
         )
+        matrix["First Purchase"] = pd.to_datetime(filtered_comp["won_at"], errors="coerce").dt.strftime("%Y-%m-%d").fillna("—")
+        matrix["First Test Prep Session"] = pd.to_datetime(filtered_comp["first_session"], errors="coerce").dt.strftime("%Y-%m-%d").fillna("—")
         matrix["Tag"] = filtered_comp["color"]
         matrix["Notes"] = filtered_comp["note"]
 
@@ -2306,6 +2368,25 @@ with tab3:
         ACT_TYPES = ["ACT", "Digital ACT"]
 
         _goal_rows = []
+        _tp_sess = df_sg_sessions.copy()
+        _tp_sess["starts_at"] = pd.to_datetime(_tp_sess["starts_at"], errors="coerce")
+        _tp_sess = _tp_sess[(_tp_sess["starts_at"] <= pd.Timestamp.now()) & (_tp_sess["attended"] > 0)]
+        if "subjects_covered" in _tp_sess.columns:
+            _tp_sess = _tp_sess[_tp_sess["subjects_covered"].fillna("").str.contains(r"\b(?:SAT|ACT|PSAT)\b", regex=True)]
+        _tp_sess = _tp_sess.sort_values(["student_id", "starts_at"])
+        _tp_sess["cum_hours"] = _tp_sess.groupby("student_id")["session_hours"].cumsum()
+        _hit20 = _tp_sess[_tp_sess["cum_hours"] >= 20].groupby("student_id")["starts_at"].min()
+        _hours20_dates = {k: v.normalize() for k, v in _hit20.items()}
+        _bb_excluded = 0
+        _not_at_20 = 0
+
+        def _is_bluebook(df):
+            m = pd.Series(False, index=df.index)
+            for c in ["exam_code", "source", "exam_type"]:
+                if c in df.columns:
+                    m = m | df[c].fillna("").astype(str).str.contains("bluebook", case=False)
+            return m
+
         for _, sg_row in _sg_students_filtered.iterrows():
             sid = sg_row["student_id"]
             stu_exams = df_sg_exams[df_sg_exams["student_id"] == sid].copy()
@@ -2323,6 +2404,14 @@ with tab3:
             typed_after = stu_exams[
                 stu_exams["exam_type"].isin(type_filter) & (stu_exams["before_or_after_tutoring"] == "after")
             ].sort_values("exam_date")
+            _bb_mask = _is_bluebook(typed_after)
+            _bb_excluded += int(_bb_mask.sum())
+            typed_after = typed_after[~_bb_mask]
+            _h20 = _hours20_dates.get(sid)
+            if _h20 is None:
+                _not_at_20 += 1
+                continue
+            typed_after = typed_after[typed_after["exam_date"].dt.normalize() >= _h20]
             if typed_after.empty:
                 continue
 
@@ -2348,6 +2437,7 @@ with tab3:
             _goal_rows.append(row)
 
         _goal_df = pd.DataFrame(_goal_rows)
+        st.caption(f"First test counted only after 20 test prep hours, excluding Bluebook exams. Excluded {_bb_excluded} Bluebook exam(s); {_not_at_20} student(s) haven't reached 20 test prep hours yet.")
 
         if len(_goal_df) > 0:
             gm1, gm2, gm3 = st.columns(3)
