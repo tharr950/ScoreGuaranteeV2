@@ -319,7 +319,7 @@ def save_sg_legend(legend_dict):
     r2 = requests.put(url, headers=headers, json=payload, timeout=30)
     return r2.status_code in (200, 201)
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def load_sg_bookings_and_refunds():
     """All booking-level rows for SG packages: net revenue + real refunds."""
     conn = get_redshift_connection()
@@ -342,7 +342,7 @@ def load_sg_bookings_and_refunds():
     return df
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def load_awarded_hours():
     """Free hours given through Score Guarantee coupon codes (line item discounts tied to those codes)."""
     conn = get_redshift_connection()
@@ -364,7 +364,7 @@ def load_awarded_hours():
     return df
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def load_sg_refunds():
     """Refund requests on Score Guarantee packages, with money re-collected after the refund."""
     conn = get_redshift_connection()
@@ -373,7 +373,7 @@ def load_sg_refunds():
         SELECT id AS package_id FROM dw.tutor_packages WHERE name ILIKE '%%Score Guarantee%%'
     ),
     rr AS (
-        SELECT r.id AS request_id, r.status, r.amount, r.reason, r.created_at AS requested_at,
+        SELECT r.id AS request_id, r.status, r.amount, r.reason, r.notes, r.created_at AS requested_at,
                li.student_id, li.item_id AS package_id
         FROM dw.refund_requests r
             JOIN dw.line_items li ON li.id = r.line_item_id
@@ -407,7 +407,7 @@ def load_sg_refunds():
     return df
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def load_premium_vs_sg_monthly():
     """
     Monthly net revenue for SG packages vs. all other Premium packages,
@@ -436,7 +436,7 @@ def load_premium_vs_sg_monthly():
     return df
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def load_premium_advisor_lookup(student_ids):
     """Redshift: advisor per student, restricted to the given student_ids.
     Uses dw only — this app has never had live MySQL access configured."""
@@ -457,7 +457,7 @@ def load_premium_advisor_lookup(student_ids):
     return pd.read_sql(query, conn)
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def load_qualifying_premium_sales():
     """
     Full qualifying-Premium population for sales tracking: same
@@ -492,23 +492,20 @@ def load_qualifying_premium_sales():
     df["net_revenue"] = pd.to_numeric(df["net_revenue"], errors="coerce").fillna(0)
     return df
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def load_attendance_taken(session_ids):
-    """Redshift: sessions where attendance has been taken (attendance row with attended not null)."""
+    """Attendance has been taken for a session when dw.sessions.attendances_taken_at is not blank."""
     if not session_ids:
         return pd.DataFrame(columns=["session_id", "attendance_taken"])
     conn = get_redshift_connection()
     ids_str = ",".join(str(int(x)) for x in session_ids)
-    query = f"""
-    SELECT a.session_id,
-           MAX(CASE WHEN a.attended IS NOT NULL THEN 1 ELSE 0 END) AS attendance_taken
-    FROM dw.attendances a
-    WHERE a.session_id IN ({ids_str})
-    GROUP BY a.session_id
-    """
-    df = pd.read_sql(query, conn)
-    df["attendance_taken"] = df["attendance_taken"] == 1
-    return df
+    try:
+        df = pd.read_sql(f"SELECT id AS session_id, attendances_taken_at FROM dw.sessions WHERE id IN ({ids_str})", conn)
+    except Exception:
+        conn.rollback()
+        raise
+    df["attendance_taken"] = df["attendances_taken_at"].notna()
+    return df[["session_id", "attendance_taken"]]
 
 # ── Load data ─────────────────────────────────────────────────────────────
 try:
@@ -552,6 +549,9 @@ with st.sidebar:
     if st.button("🔄 Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
+    _fa = df_sg["fetched_at"].iloc[0] if (not df_sg.empty and "fetched_at" in df_sg.columns) else "unknown"
+    st.caption(f"Student, session & exam data last synced: {_fa}")
+    st.caption("Sales, revenue, refund & award data is live from Redshift (refreshes every 5 minutes, or click Refresh).")
 
 # ── Score Guarantee Content ──────────────────────────────────────────────
 st.markdown(
@@ -937,6 +937,7 @@ else:
             ("⚠️ Behind on Practice Tests", behind_html, len(behind_on_exams)),
             ("⚠️ Off Target / No Improvement", score_html, len(score_concerns)),
         ]
+        alert_configs = [a for a in alert_configs if "Off Target" not in a[0]]
         active_alerts = [(label, html, cnt) for label, html, cnt in alert_configs if html]
         if active_alerts:
             cols = st.columns(len(active_alerts))
@@ -2347,7 +2348,8 @@ with tab3:
         _rf["net_refunded"] = _rf["amount"] - _rf["repaid_after"]
         _rf = _rf[_rf["net_refunded"] > 0]
         _refund_rows = pd.DataFrame({"student_id": _rf["student_id"], "package_id": _rf["package_id"],
-                                     "amount": -_rf["net_refunded"], "booked_at": _rf["refunded_at"]})
+                                     "amount": -_rf["net_refunded"], "booked_at": _rf["refunded_at"],
+"reason": _rf["reason"], "notes": _rf["notes"]})
         _pending_cb = _rf_all[(_rf_all["status"] == "pending") & (_rf_all["student_id"].isin(_sg_student_ids_filtered))]
         _total_refunded = abs(_refund_rows["amount"].sum())
         _net_revenue_all = _bookings_df["amount"].sum()
@@ -2367,8 +2369,8 @@ with tab3:
                     df_sg[["student_id", "student", "advisor"]], on="student_id", how="left"
                 )
                 st.dataframe(
-                    _refund_display[["student", "advisor", "package_id", "amount", "booked_at"]]
-                    .rename(columns={"amount": "Refund Amount", "booked_at": "Date", "package_id": "Package ID"})
+                    _refund_display[["student", "advisor", "package_id", "amount", "booked_at", "reason", "notes"]]
+                    .rename(columns={"amount": "Refund Amount", "booked_at": "Date", "package_id": "Package ID", "reason": "Reason", "notes": "Note"})
                     .sort_values("Date", ascending=False),
                     hide_index=True, use_container_width=True,
                 )
@@ -2386,8 +2388,10 @@ with tab3:
     try:
         _awarded_df = load_awarded_hours()
         _awarded_by_student = (
-            _awarded_df.groupby("student_id")["won_at"].min().reset_index().rename(columns={"won_at": "awarded_at"})
-        )
+    _awarded_df.groupby("student_id")
+    .agg(awarded_at=("won_at", "min"), hours_awarded=("package_hours", "sum"), value_awarded=("discount_amount", "sum"))
+    .reset_index()
+)
 
         def _calc_target(score, test_type):
             if pd.isna(score):
@@ -2459,6 +2463,8 @@ with tab3:
                 awarded_at = aw.iloc[0]["awarded_at"]
                 after_award = typed_after[typed_after["exam_date"] > awarded_at]
                 row["awarded_hours"] = True
+                row["hours_awarded"] = aw.iloc[0]["hours_awarded"]
+                row["value_awarded"] = aw.iloc[0]["value_awarded"]
                 if len(after_award) > 0:
                     second_score = after_award.iloc[0]["score"]
                     row["second_test_score"] = second_score
@@ -2480,7 +2486,9 @@ with tab3:
 
             _with_award = _goal_df[_goal_df.get("awarded_hours", False) == True] if "awarded_hours" in _goal_df.columns else pd.DataFrame()
             _n_award = len(_with_award)
-            gm2.metric("Students Awarded Extra Hours", f"{_n_award}")
+            _aw_f = _awarded_df[_awarded_df["student_id"].isin(_sg_student_ids_filtered)]
+            gm2.metric("Students Awarded Extra Hours", f"{_aw_f['student_id'].nunique()}")
+            gm2.caption(f"{_aw_f['package_hours'].sum():,.0f} hours awarded · ${_aw_f['discount_amount'].sum():,.0f} in value")
 
             if _n_award > 0 and "reached_goal_after_award" in _with_award.columns:
                 _has_second = _with_award["second_test_score"].notna().sum() if "second_test_score" in _with_award.columns else 0
@@ -2488,10 +2496,20 @@ with tab3:
                 gm3.metric("Reached Goal — After Award", f"{_reached_second} of {_has_second}",
                             f"{_reached_second/_has_second*100:.0f}%" if _has_second > 0 else None)
 
+            if len(_aw_f) > 0:
+                with st.expander("View awarded hours", expanded=False):
+                    _aw_tbl = _aw_f.merge(df_sg[["student_id", "student", "advisor"]].drop_duplicates("student_id"), on="student_id", how="left")
+                    st.dataframe(
+                        _aw_tbl[["student", "advisor", "coupon_code", "package_hours", "discount_amount", "won_at"]]
+                        .rename(columns={"student": "Student", "advisor": "Advisor", "coupon_code": "Coupon",
+                                         "package_hours": "Hours Awarded", "discount_amount": "Value ($)", "won_at": "Date"})
+                        .sort_values("Date", ascending=False),
+                        hide_index=True, use_container_width=True,
+                    )
             with st.expander("View student-level goal detail", expanded=False):
                 _display_cols = ["student", "advisor", "test_type", "baseline", "target",
                                   "first_test_score", "reached_goal_first_test",
-                                  "awarded_hours", "second_test_score", "reached_goal_after_award"]
+                                  "awarded_hours", "hours_awarded", "value_awarded", "second_test_score", "reached_goal_after_award"]
                 _display_cols = [c for c in _display_cols if c in _goal_df.columns]
                 st.dataframe(_goal_df[_display_cols], hide_index=True, use_container_width=True)
         else:
@@ -2510,6 +2528,9 @@ with tab3:
 
     try:
         _pvp_df = load_premium_vs_sg_monthly()
+        _pvp_range = st.date_input("Revenue time period", value=(date(2025, 1, 1), date.today()), key="pvp_date_range")
+        if isinstance(_pvp_range, (tuple, list)) and len(_pvp_range) == 2:
+            _pvp_df = _pvp_df[(_pvp_df["won_at"].dt.date >= _pvp_range[0]) & (_pvp_df["won_at"].dt.date <= _pvp_range[1])].copy()
         if selected_advisors:
             _pvp_student_ids = _pvp_df["student_id"].dropna().unique().tolist()
             _advisor_lookup = load_premium_advisor_lookup(_pvp_student_ids)
