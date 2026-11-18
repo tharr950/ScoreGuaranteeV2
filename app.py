@@ -143,7 +143,7 @@ def get_redshift_connection():
     return st.session_state.rs_conn
 
 # ── Data loaders ─────────────────────────────────────────────────────────
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def load_team_roster():
     query = """
     SELECT DISTINCT
@@ -162,7 +162,7 @@ def load_team_roster():
     conn = get_redshift_connection()
     return pd.read_sql(query, conn)
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def load_score_guarantee():
     token = st.secrets.get("github", {}).get("token", "")
     repo = st.secrets.get("github", {}).get("repo", "")
@@ -178,7 +178,7 @@ def load_score_guarantee():
     decoded = base64.b64decode(r.json()["content"]).decode("utf-8")
     return pd.read_csv(io.StringIO(decoded))
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def load_parent_progress_updates(course_ids):
     if not course_ids:
         return pd.DataFrame()
@@ -217,7 +217,7 @@ def load_parent_progress_updates(course_ids):
     except Exception:
         return pd.DataFrame()
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def load_sg_sessions():
     token = st.secrets.get("github", {}).get("token", "")
     repo = st.secrets.get("github", {}).get("repo", "")
@@ -232,7 +232,7 @@ def load_sg_sessions():
     import io
     return pd.read_csv(io.StringIO(base64.b64decode(r.json()["content"]).decode("utf-8")))
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def load_sg_exams():
     token = st.secrets.get("github", {}).get("token", "")
     repo = st.secrets.get("github", {}).get("repo", "")
