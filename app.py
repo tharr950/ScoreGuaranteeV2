@@ -492,21 +492,6 @@ def load_qualifying_premium_sales():
     df["net_revenue"] = pd.to_numeric(df["net_revenue"], errors="coerce").fillna(0)
     return df
 
-@st.cache_data(ttl=300)
-def load_attendance_taken(session_ids):
-    """Attendance has been taken for a session when dw.sessions.attendances_taken_at is not blank."""
-    if not session_ids:
-        return pd.DataFrame(columns=["session_id", "attendance_taken"])
-    conn = get_redshift_connection()
-    ids_str = ",".join(str(int(x)) for x in session_ids)
-    try:
-        df = pd.read_sql(f"SELECT id AS session_id, attendances_taken_at FROM dw.sessions WHERE id IN ({ids_str})", conn)
-    except Exception:
-        conn.rollback()
-        raise
-    df["attendance_taken"] = df["attendances_taken_at"].notna()
-    return df[["session_id", "attendance_taken"]]
-
 # ── Load data ─────────────────────────────────────────────────────────────
 try:
     df_roster = load_team_roster()
@@ -515,16 +500,13 @@ try:
     df_sg_exams = load_sg_exams()
     _sg_course_ids = df_sg["course_id"].dropna().unique().tolist() if "course_id" in df_sg.columns else []
     df_progress = load_parent_progress_updates(_sg_course_ids)
-    try:
-        if not df_sg_sessions.empty and "session_id" in df_sg_sessions.columns:
-            _taken = load_attendance_taken(df_sg_sessions["session_id"].dropna().astype(int).unique().tolist())
-            df_sg_sessions = df_sg_sessions.merge(_taken, on="session_id", how="left")
-            df_sg_sessions["attendance_taken"] = df_sg_sessions["attendance_taken"].fillna(False).astype(bool)
-        else:
-            df_sg_sessions["attendance_taken"] = True
-    except Exception as _e:
+    # Attendance has been taken for a session only when attendance_taken_at (from the sync) is filled in.
+    if "attendance_taken_at" in df_sg_sessions.columns:
+        _at = df_sg_sessions["attendance_taken_at"]
+        df_sg_sessions["attendance_taken"] = _at.notna() & ~_at.astype(str).str.strip().isin(["", "nan", "NaT", "None"])
+    else:
         df_sg_sessions["attendance_taken"] = True
-        st.warning(f"Could not check which sessions have attendance taken; showing all past sessions. ({_e})")
+        st.warning("Session data does not have attendance_taken_at yet (the sync needs to run). Until then every past session is treated as attendance taken.")
     # Remove exam entries with blank/null scores
     if not df_sg_exams.empty:
         df_sg_exams["score"] = pd.to_numeric(df_sg_exams["score"], errors="coerce")
