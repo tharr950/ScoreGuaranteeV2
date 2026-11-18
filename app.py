@@ -601,11 +601,20 @@ else:
             _new_this_week = _sales_df[_sales_df["week"] == _this_week]
             _new_last_week = _sales_df[_sales_df["week"] == _last_week]
 
+            # This week is only the days so far, so compare it with the SAME days of last week (not all of last week).
+            _last_wtd = _sales_df[(_sales_df["won_at"] >= _last_week) &
+                                  (_sales_df["won_at"] <= pd.Timestamp.now() - pd.Timedelta(days=7))]
+
+            def _sd(d, money=False):
+                # Streamlit picks the arrow/color from a leading "-", so the sign must come BEFORE the "$"
+                sign = "-" if d < 0 else "+"
+                return f"{sign}${abs(d):,.0f}" if money else f"{sign}{abs(int(d))}"
+
             sm1, sm2, sm3 = st.columns(3)
             sm1.metric("New Sales This Week", len(_new_this_week),
-                        f"{len(_new_this_week) - len(_new_last_week):+d} vs last week")
+                        f"{_sd(len(_new_this_week) - len(_last_wtd))} vs same days last week")
             sm2.metric("Revenue This Week", f"${_new_this_week['net_revenue'].sum():,.0f}",
-                        f"${_new_this_week['net_revenue'].sum() - _new_last_week['net_revenue'].sum():+,.0f} vs last week")
+                        f"{_sd(_new_this_week['net_revenue'].sum() - _last_wtd['net_revenue'].sum(), True)} vs same days last week")
             sm3.metric("Total Qualifying Sales (selected range)", len(_sales_df))
 
             st.markdown("")
